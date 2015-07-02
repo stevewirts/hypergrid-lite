@@ -1,0 +1,43 @@
+{
+    "devtools_port": 9090,
+    "startup_app": {
+        "name": "LightStreamerDemo",
+        "description": "Light Stream Demo",
+        "__url": "http://local:5000/index.html",
+        "url": "http://cdn.openfin.co/lightstreamer/",
+        "icon": "http://cdn.openfin.co/lightstreamer/images/favicon.ico",
+        "linkURL":"https://dl.openfin.co/services/download?fileName=lightstreamer-demo&config=http://cdn.openfin.co/lightstreamer/app.json",
+        "uuid": "LightStreamerDemo",
+        "autoShow": true,
+        "defaultHeight": 560,
+        "minHeight": 560,
+        "maxHeight":560,
+        "defaultWidth": 260,
+        "minWidth":260,
+        "maxWidth":260,
+        "resizable":false,
+        "frame": false,
+        "maximizable": false,
+        "saveWindowState": false,
+        "defaultTop": 10,
+        "defaultLeft": 10,
+        "resizable": true,
+        "maximizable": false,
+        "frame": false,
+        "cornerRounding": {
+            "width": 5,
+            "height": 5
+        },
+        "opacity": 1
+    },
+    "runtime": {
+        "arguments": "",
+        "version": "stable"
+    },
+    "shortcut": {
+        "company": "OpenFin",
+        "description": "LightStreamer Demo",
+         "icon": "http://cdn.openfin.co/lightstreamer/images/favicon.ico",
+        "name": "LightStreamer Demo"
+    }
+}

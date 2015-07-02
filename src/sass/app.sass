@@ -1,0 +1,189 @@
+$background-color: #030a28
+$title-text-color: rgb(23, 114, 239)
+
+$dashboard-font-size: .77rem
+$on-green: rgb(127,255,7)
+$off-red: rgb(251,7,7)
+
+html, body
+	height: 100%
+	background-color: $background-color
+	color: white
+	font-size: 1em
+	font-family: 'Roboto Condensed', Verdana, sans-serif
+	overflow: hidden
+
+.ls-window
+	display:flex
+	flex-direction: column
+	padding: 0 10px
+	height: 100%
+	-webkit-app-region: no-drag
+	/* div */
+		/* outline: 1px solid silver */
+	.non-shrinking
+		display:flex
+		flex-direction: column
+		flex: 8.2
+		padding-bottom: 5px
+		min-height: 200px
+		max-height: 200px
+		.window-control
+			display: flex
+			justify-content: flex-end
+			flex: 1
+			-webkit-app-region: drag
+			i
+				font-size: 1.2rem
+				font-weight: lighter
+				padding-left: 8px
+				-webkit-app-region: no-drag
+				padding-top: 3px
+			i.min
+				padding-top: 8px
+		.id-bar
+			display: flex
+			flex-direction: column
+			flex: 2.2
+			color: $title-text-color
+			-webkit-app-region: drag
+			.ticker
+				display:flex
+				.symbol
+					flex: 1.1
+					font-size: 2rem
+					font-weight: bold
+				.status
+					flex: 1
+					display: flex
+					align-items: center
+			.name
+				flex: 2
+				font-size: $dashboard-font-size
+				padding-left: 10px
+		.dashboard
+			display: flex
+			flex: 5
+			.last
+				display: flex
+				flex-direction: column
+				flex:4
+				.price
+					display: flex
+					flex: 2
+					justify-content: flex-end
+					align-items: flex-end
+					font-size: 2.2rem
+					text-align: right
+				.volume
+					display: flex
+					flex: 1
+					justify-content: flex-end
+					align-items: flex-start
+					text-align: right
+				.expander
+					display: flex
+					flex: 1
+					justify-content: flex-start
+					align-items: flex-end
+					i
+						font-size: 1rem
+						opacity: .4
+			.time
+				display: flex
+				flex-direction: column
+				justify-content: flex-start
+				flex: 3
+				.timeval
+					display: flex
+					flex-direction: column
+					justify-content: flex-end
+					align-items: center
+					flex: 2
+				.timebottom
+					flex: 2
+
+			.detail
+				display: flex
+				flex-direction: column
+				flex: 3
+				text-align: right
+				font-size: $dashboard-font-size
+				.label
+					flex: 1.5
+					display: flex
+					justify-content: flex-end
+					align-items: flex-end
+					color: $title-text-color
+				.val
+					display: flex
+					justify-content: flex-end
+					align-items: flex-end
+					flex: .5
+				
+	.grid
+		display:flex
+		flex: 15
+
+
+.status-indicator 
+  display: inline-block;
+  height: 15px;
+  width: 15px;
+  background-color: $on-green
+  border-radius: 30px;
+
+.status-indicator.day-end
+	background-color: $off-red
+/* @media screen and (max-height: 500px) */
+/*	.ls-window */
+/*		.dashboard */
+/*			.time */
+/*				display: none */
+/*			.detail */
+/*				flex: 1 */
+/*				.label, .val */
+/*					display: none */
+/*		.id-bar */
+/*			.name */
+/*				display: none */
+
+
+#buy-sell-grid
+	height: 352px;
+	width: 240px;
+
+
+.none
+	display: none
+
+div.connecting
+	display: none
+
+.connect-ico.connecting
+	display: block
+	font-size: 11rem
+	opacity: .3
+	width:178px
+	animation-timing-function: linear;
+	animation: infinite-spinning 2s infinite
+	position: absolute
+	top: 50%
+	left: 15%
+
+@keyframes infinite-spinning
+	from
+		transform: rotate(0deg)
+	to
+		transform: rotate(360deg)
+
+.connect-ico
+	display: none
+
+.non-shrinking.blank
+	.last,.time,.val
+		color: $background-color
+
+
+
+
