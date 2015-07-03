@@ -1,11 +1,30 @@
 <html>
 <head>
+	<style>
+	#grid {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		background: yellow;
+		margin: 5px;
+	}
+	</style>
   <meta charset="UTF-8">
   <title>hypergrid-lite</title>
 
 </head>
 <body>
+	<div id="grid"></div>
   <script src="out.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function(event) {
+  	var container = document.querySelector('#grid');
+    var grid = fin.hypergridlite.createOn(container);
+    grid.paint();
+  });
+</script>
 </body>
 </html>
  
