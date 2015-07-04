@@ -1,13 +1,22 @@
 <html>
 <head>
 	<style>
-	#grid {
+	#grid1 {
 		position: absolute;
 		top: 0;
 		bottom: 0;
 		left: 0;
+		right: 50%;
+		background: #606060;
+		margin: 5px;
+	}
+	#grid2 {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: 50%;
 		right: 0;
-		background: yellow;
+		background: #606060;
 		margin: 5px;
 	}
 	</style>
@@ -16,13 +25,83 @@
 
 </head>
 <body>
-	<div id="grid"></div>
+	<div id="grid1"></div>
+	<div id="grid2"></div>
   <script src="out.js"></script>
 <script>
   document.addEventListener("DOMContentLoaded", function(event) {
-  	var container = document.querySelector('#grid');
-    var grid = fin.hypergridlite.createOn(container);
-    grid.paint();
+
+    var model1 = new fin.hypergridlite.GridModel(randomData(500));
+
+  	var container1 = document.querySelector('#grid1');
+    var grid1 = fin.hypergridlite.createOn(container1, model1);
+
+    var defaultCellRenderer = grid1.getDefaultCellRenderer();
+
+    grid1.addColumn('work', 'Work', 'object', 50, function(gc, config) {
+    	config.backgroundColor = '#505050';
+    	config.color = '#ffffff';
+    	defaultCellRenderer(gc, config);
+    });
+    grid1.addColumn('bids', 'Bids', 'number', 50, function(gc, config) {
+    	config.backgroundColor = '#2565a2';
+    	config.color = 'white';
+    	defaultCellRenderer(gc, config);
+    });
+    grid1.addColumn('price', 'Price', 'number', 70, function(gc, config) {
+    	config.backgroundColor = '#c1c1c1';
+    	config.color = 'black';
+    	defaultCellRenderer(gc, config);
+    });
+    grid1.addColumn('asks', 'Asks', 'number', 50, function(gc, config) {
+    	config.backgroundColor = '#941e20';
+    	config.color = 'white';
+    	defaultCellRenderer(gc, config);
+    });
+    grid1.addColumn('ltq', 'LTQ', 'number', 50, function(gc, config) {
+    	config.backgroundColor = '#505050';
+    	config.color = '#ffffff';
+    	defaultCellRenderer(gc, config);
+    });
+
+
+
+///// second grid
+
+    var model2 = new fin.hypergridlite.GridModel(randomData(500));
+  	var container2 = document.querySelector('#grid2');
+    var grid2 = fin.hypergridlite.createOn(container2, model2);
+
+    grid2.addColumn('work', 'Work', 'object', 50, function(gc, config) {
+    	config.backgroundColor = '#505050';
+    	config.color = '#ffffff';
+    	defaultCellRenderer(gc, config);
+    });
+    grid2.addColumn('bids', 'Bids', 'number', 50, function(gc, config) {
+    	config.backgroundColor = '#2565a2';
+    	config.color = 'white';
+    	defaultCellRenderer(gc, config);
+    });
+    grid2.addColumn('price', 'Price', 'number', 70, function(gc, config) {
+    	config.backgroundColor = '#c1c1c1';
+    	config.color = 'black';
+    	defaultCellRenderer(gc, config);
+    });
+    grid2.addColumn('asks', 'Asks', 'number', 50, function(gc, config) {
+    	config.backgroundColor = '#941e20';
+    	config.color = 'white';
+    	defaultCellRenderer(gc, config);
+    });
+    grid2.addColumn('ltq', 'LTQ', 'number', 50, function(gc, config) {
+    	config.backgroundColor = '#505050';
+    	config.color = '#ffffff';
+    	defaultCellRenderer(gc, config);
+    });
+
+
+
+
+
   });
 </script>
 </body>

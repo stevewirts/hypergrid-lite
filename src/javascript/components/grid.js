@@ -1,8 +1,12 @@
 'use strict';
 
-
+var Column = require('./column.js');
+var SimpleLRU = require('simple-lru');
+var defaultcellrenderer = require('./defaultcellrenderer.js');
 var resizables = [];
 var resizeLoopRunning = true;
+var fontData = {};
+var textWidthCache = new SimpleLRU(10000);
 
 
 var resizablesLoopFunction = function(now) {
@@ -18,47 +22,213 @@ var resizablesLoopFunction = function(now) {
 setInterval(resizablesLoopFunction, 200);
 
 
-function Grid(domElement) {
-	var canvas = document.createElement('canvas');
-	var context = canvas.getContext("2d");
+function Grid(domElement, model, properties) {
 
-	this.getCanvas = function() {
-		return canvas;
-	};
+    var self = this;
 
-	this.getContainer = function() {
-		return domElement;
-	};
+    var options = this.getDefaultProperties();
+    this.addProperties(properties);
 
-	this.getContext = function() {
-		return context;
-	};
+    var canvas = document.createElement('canvas');
+    var context = canvas.getContext("2d");
+    var columns = [];
 
-	this.initialize()
+    model.changed = function(x, y) {
+        self.paint(x, y);
+    };
+
+    this.getCanvas = function() {
+        return canvas;
+    };
+
+    this.getContainer = function() {
+        return domElement;
+    };
+
+    this.getContext = function() {
+        return context;
+    };
+
+    this.getModel = function() {
+        return model;
+    };
+
+    this.setModel = function(gridModel) {
+        model = gridModel;
+    };
+
+    this.getColumns = function() {
+        return columns;
+    }
+
+    this.getOptions = function() {
+        return options;
+    };
+
+    this.setOptions = function(newOptions) {
+        options = newOptions;
+    };
+
+    this.initialize()
+};
+
+Grid.prototype.getDefaultProperties = function() {
+    return {
+        font: '13px Tahoma, Geneva, sans-serif',
+        color: '#ffffff',
+        backgroundColor: '#505050',
+        foregroundSelColor: 'rgb(25, 25, 25)',
+        backgroundSelColor: 'rgb(183, 219, 255)',
+
+        topLeftFont: '14px Tahoma, Geneva, sans-serif',
+        topLeftColor: 'rgb(25, 25, 25)',
+        topLeftBackgroundColor: 'rgb(223, 227, 232)',
+        topLeftFGSelColor: 'rgb(25, 25, 25)',
+        topLeftBGSelColor: 'rgb(255, 220, 97)',
+
+        fixedColumnFont: '14px Tahoma, Geneva, sans-serif',
+        fixedColumnColor: 'rgb(25, 25, 25)',
+        fixedColumnBackgroundColor: 'rgb(223, 227, 232)',
+        fixedColumnFGSelColor: 'rgb(25, 25, 25)',
+        fixedColumnBGSelColor: 'rgb(255, 220, 97)',
+
+        fixedRowFont: '11px Tahoma, Geneva, sans-serif',
+        fixedRowColor: '#ffffff',
+        fixedRowBackgroundColor: '#303030',
+        fixedRowFGSelColor: 'rgb(25, 25, 25)',
+        fixedRowBGSelColor: 'rgb(255, 220, 97)',
+
+        backgroundColor2: '#303030',
+        lineColor: '#707070',
+        voffset: 0,
+        scrollingEnabled: false,
+
+        defaultRowHeight: 25,
+        defaultFixedRowHeight: 20,
+        defaultColumnWidth: 100,
+        defaultFixedColumnWidth: 100,
+        cellPadding: 5
+    };
 };
 
 Grid.prototype.initialize = function() {
-	this.getContainer().appendChild(this.getCanvas());
-	this.checkCanvasBounds();
-	this.beginResizing();
+    var container = this.getContainer();
+    container.style.overflow = 'auto';
+    this.getContainer().appendChild(this.getCanvas());
+    this.checkCanvasBounds();
+    this.beginResizing();
+};
+
+Grid.prototype.getTextWidth = function(gc, string) {
+    if (string === null || string === undefined) {
+        return 0;
+    }
+    string = string + '';
+    if (string.length === 0) {
+        return 0;
+    }
+    var key = gc.font + string;
+    var width = textWidthCache.get(key);
+    if (!width) {
+        width = gc.measureText(string).width;
+        textWidthCache.set(key, width);
+    }
+    return width;
+};
+
+
+Grid.prototype.getTextHeight = function(font) {
+
+    var result = fontData[font];
+    if (result) {
+        return result;
+    }
+    result = {};
+    var text = document.createElement('span');
+    text.textContent = 'Hg';
+    text.style.font = font;
+
+    var block = document.createElement('div');
+    block.style.display = 'inline-block';
+    block.style.width = '1px';
+    block.style.height = '0px';
+
+    var div = document.createElement('div');
+    div.appendChild(text);
+    div.appendChild(block);
+
+    div.style.position = 'absolute';
+    document.body.appendChild(div);
+
+    try {
+
+        block.style.verticalAlign = 'baseline';
+
+        var blockRect = block.getBoundingClientRect();
+        var textRect = text.getBoundingClientRect();
+
+        result.ascent = blockRect.top - textRect.top;
+
+        block.style.verticalAlign = 'bottom';
+        result.height = blockRect.top - textRect.top;
+
+        result.descent = result.height - result.ascent;
+
+    } finally {
+        div.remove();
+    }
+    if (result.height !== 0) {
+        fontData[font] = result;
+    }
+    return result;
+};
+
+Grid.prototype.merge = function(properties1, properties2) {
+    for (var key in properties2) {
+        if (properties2.hasOwnProperty(key)) {
+            properties1[key] = properties2[key];
+        }
+    }
+};
+
+Grid.prototype.addProperties = function(properties) {
+    this.merge(this.options, properties);
 };
 
 Grid.prototype.checkCanvasBounds = function() {
-	var canvas = this.getCanvas();
-	var container = this.getContainer();
-	var containerBounds = container.getBoundingClientRect();
-	
-	if (this.width === containerBounds.width && this.height === containerBounds.height) {
-		return;
-	}
+    var container = this.getContainer();
+    var computedWidth = this.computeMainAreaFullWidth();
+    var computedHeight = this.computeMainAreaFullHeight();
 
-	canvas.setAttribute('width', containerBounds.width);
-	canvas.setAttribute('height', containerBounds.height);	
+    if (this.width === computedWidth && this.height === computedHeight) {
+        return;
+    }
 
-	this.width = containerBounds.width;
-	this.height = containerBounds.height;
+    this.viewport = container.getBoundingClientRect();
+    var canvas = this.getCanvas();
+    canvas.setAttribute('width', computedWidth);
+    canvas.setAttribute('height', computedHeight);
 
-	this.paint();
+    this.width = computedWidth;
+    this.height = computedHeight;
+
+    this.paintAll();
+};
+
+Grid.prototype.computeMainAreaFullHeight = function() {
+    var rowHeight = this.getRowHeight(0);
+    var numRows = this.getRowCount();
+    var totalHeight = rowHeight * numRows;
+    return totalHeight;
+};
+
+Grid.prototype.computeMainAreaFullWidth = function() {
+    var numCols = this.getColumnCount();
+    var width = 0;
+    for (var i = 0; i < numCols; i++) {
+        width = width + this.getColumnWidth(i);
+    }
+    return width;
 };
 
 Grid.prototype.stopResizeThread = function() {
@@ -85,26 +255,127 @@ Grid.prototype.stopResizing = function() {
     resizables.splice(resizables.indexOf(this.tickResizer), 1);
 };
 
-Grid.prototype.paint = function() {
-	var self = this;
-	requestAnimationFrame(function() {
-		self._paint();
-	});
+Grid.prototype.getColumn = function(x) {
+    var column = this.getColumns()[x];
+    return column;
 };
 
-Grid.prototype._paint = function() {
-	try {
-		var context = this.getContext();
-		context.save();
-		context.fillStyle = 'blue';
-		context.fillRect(50,25,150,100);
-	}
-	catch(e) {
-		context.restore();
-		console.log(e);
-	}
+Grid.prototype.getValue = function(x, y) {
+    var model = this.getModel();
+    var column = this.getColumns()[x];
+    var field = column.getField();
+    var value = model.getValue(field, y);
+    return value;
 };
 
-module.exports = function(domElement) {
-    return new Grid(domElement);
+Grid.prototype.getBoundsOfCell = function(x, y) {
+    var rx, ry, rwidth, rheight;
+    var rowHeight = this.getRowHeight(0);
+
+    rx = 0;
+    for (var i = 0; i < x; i++) {
+        rx = rx + this.getColumnWidth(i);
+    }
+    ry = rowHeight * y;
+    rwidth = this.getColumnWidth(x);
+    rheight = rowHeight;
+    var result = {
+        x: rx,
+        y: ry,
+        width: rwidth,
+        height: rheight
+    };
+    return result;
+};
+
+Grid.prototype.getViewportVisibleGridCoordinates = function() {
+
+};
+
+Grid.prototype.getFixedRowHeight = function() {
+    var value = this.resolveProperty('defaultFixedRowHeight');
+    return value;
+};
+
+Grid.prototype.getColumnWidth = function(x) {
+    var column = this.getColumn(x);
+    var value = column.getWidth();
+    return value;
+};
+
+Grid.prototype.getRowHeight = function(y) {
+    var value = this.resolveProperty('defaultRowHeight');
+    return value;
+};
+
+Grid.prototype.resolveProperty = function(name) {
+    var value = this.getOptions()[name];
+    return value;
+};
+
+Grid.prototype.getColumnCount = function() {
+    var columns = this.getColumns();
+    return columns.length
+};
+
+Grid.prototype.getRowCount = function() {
+    var model = this.getModel();
+    return model.getRowCount();
+};
+
+Grid.prototype.addColumn = function(field, label, type, width, renderer) {
+    var columns = this.getColumns();
+    var newCol = new Column(this, field, label, type, width, renderer);
+    columns.push(newCol);
+};
+
+Grid.prototype.paintAll = function() {
+    try {
+        var self = this;
+        var config = Object.create(this.getDefaultProperties());
+
+        config.getTextHeight = function(font) {
+            return self.getTextHeight(font);
+        };
+
+        config.getTextWidth = function(gc, text) {
+            return self.getTextWidth(gc, text);
+        };
+
+        var context = this.getContext();
+        context.save();
+        var numCols = this.getColumnCount();
+        var numRows = this.getRowCount();
+        for (var x = 0; x < numCols; x++) {
+            for (var y = 0; y < numRows; y++) {
+                this.paintCell(x, y, config);
+            }
+        }
+
+    } catch (e) {
+        context.restore();
+        console.log(e);
+    }
+};
+
+Grid.prototype.paintCell = function(x, y, config) {
+    var model = this.getModel();
+    var bounds = this.getBoundsOfCell(x, y);
+    var context = this.getContext();
+    var column = this.getColumn(x);
+    var renderer = column.getRenderer();
+    var value = this.getValue(x, y);
+    config.value = value;
+    config.x = x;
+    config.y = y;
+    config.bounds = bounds;
+    renderer(context, config);
+};
+
+Grid.prototype.getDefaultCellRenderer = function() {
+    return defaultcellrenderer;
+}
+
+module.exports = function(domElement, model) {
+    return new Grid(domElement, model);
 };
