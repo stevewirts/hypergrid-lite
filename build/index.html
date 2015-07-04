@@ -1,0 +1,170 @@
+<html>
+<head>
+	<style>
+	#grid1 {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: 0;
+		right: 50%;
+		background: #606060;
+		margin: 5px;
+	}
+	#grid2 {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: 50%;
+		right: 0;
+		background: #606060;
+		margin: 5px;
+	}
+	</style>
+  <meta charset="UTF-8">
+  <title>hypergrid-lite</title>
+
+</head>
+<body>
+	<div id="grid1"></div>
+	<div id="grid2"></div>
+  <script src="out.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function(event) {
+
+    var model1 = new fin.hypergridlite.GridModel(randomData(500));
+
+  	var container1 = document.querySelector('#grid1');
+    var grid1 = fin.hypergridlite.createOn(container1, model1);
+
+    var defaultCellRenderer = grid1.getDefaultCellRenderer();
+
+    grid1.addColumn('work', 'Work', 'object', 50, function(gc, config) {
+    	config.backgroundColor = '#505050';
+    	config.color = 'rgb(71,71,71)';
+    	defaultCellRenderer(gc, config);
+    });
+    grid1.addColumn('bids', 'Bids', 'number', 50, function(gc, config) {
+    	config.backgroundColor = '#2565a2';
+    	config.color = 'white';
+    	defaultCellRenderer(gc, config);
+    });
+    grid1.addColumn('price', 'Price', 'number', 70, function(gc, config) {
+    	config.backgroundColor = '#c1c1c1';
+    	config.color = 'rgb(71,71,71)';
+    	defaultCellRenderer(gc, config);
+    });
+    grid1.addColumn('asks', 'Asks', 'number', 50, function(gc, config) {
+    	config.backgroundColor = '#941e20';
+    	config.color = 'white';
+    	defaultCellRenderer(gc, config);
+    });
+    grid1.addColumn('ltq', 'LTQ', 'number', 50, function(gc, config) {
+    	config.backgroundColor = '#505050';
+    	config.color = '#ffffff';
+    	defaultCellRenderer(gc, config);
+    });
+
+
+
+///// second grid
+
+    var model2 = new fin.hypergridlite.GridModel(randomData(500));
+  	var container2 = document.querySelector('#grid2');
+    var grid2 = fin.hypergridlite.createOn(container2, model2);
+    var whiteLineFunc = function(gc, config) {
+    	if (config.y !== 10) {
+    		return;
+    	}
+		var b = config.bounds;
+		gc.beginPath();
+  		gc.lineWidth = 3;
+    	gc.strokeStyle = 'white';
+		gc.moveTo(b.x, b.y);
+		gc.lineTo(b.x + b.width, b.y);
+		gc.stroke();
+    };
+
+    var borderFunc = function(gc, config) {
+		var b = config.bounds;
+		gc.beginPath();
+  		gc.lineWidth = 1;
+    	gc.strokeStyle = 'grey';
+		gc.moveTo(b.x, b.y);
+		gc.lineTo(b.x, b.y + b.height);
+		gc.moveTo(b.x, b.y + b.height);
+		gc.lineTo(b.x + b.width, b.y + b.height);
+		gc.stroke();
+
+    };
+
+    grid2.addColumn('work', 'Work', 'object', 50, function(gc, config) {
+    	config.backgroundColor = '#505050';
+    	config.color = '#ffffff';
+    	defaultCellRenderer(gc, config);
+    	borderFunc(gc, config);
+		whiteLineFunc(gc, config);
+    });
+    grid2.addColumn('bids', 'Bids', 'number', 50, function(gc, config) {
+    	config.backgroundColor = '#2565a2';
+    	config.color = 'white';
+    	defaultCellRenderer(gc, config);
+    	borderFunc(gc, config);
+		whiteLineFunc(gc, config);
+    });
+    grid2.addColumn('price', 'Price', 'number', 70, function(gc, config) {
+    	config.backgroundColor = '#c1c1c1';
+    	var drawLine = false;
+    	var bHeight = 0;
+    	if (config.y === 10) {
+    		drawLine = true
+    		var b = config.bounds;
+    		var bHeight = Math.floor(b.height/2);
+    		gc.fillStyle = config.backgroundColor;
+        	gc.fillRect(b.x, b.y, b.width, b.height);
+    		gc.fillStyle = 'rgb(222,111,114)';
+        	gc.fillRect(b.x, b.y, b.width, bHeight);
+    		config.backgroundColor = 'transparent';
+    	} 
+    	if (config.y === 9) {
+    		var b = config.bounds;
+    		var bHeight = Math.floor(b.height/2);
+    		gc.fillStyle = config.backgroundColor;
+        	gc.fillRect(b.x, b.y, b.width, b.height);
+    		gc.fillStyle = 'rgb(222,111,114)';
+        	gc.fillRect(b.x, b.y + bHeight, b.width, bHeight);
+    		config.backgroundColor = 'transparent';
+    	} 
+    	config.color = 'rgb(71,71,71)';
+    	defaultCellRenderer(gc, config);
+    	borderFunc(gc, config);
+		whiteLineFunc(gc, config);
+    });
+    grid2.addColumn('asks', 'Asks', 'number', 50, function(gc, config) {
+    	config.backgroundColor = '#941e20';
+    	config.color = 'white';
+    	defaultCellRenderer(gc, config);
+    	borderFunc(gc, config);
+		whiteLineFunc(gc, config);
+    });
+    grid2.addColumn('ltq', 'LTQ', 'number', 50, function(gc, config) {
+    	if (config.y === 11) {
+    		config.backgroundColor = 'white';
+    		config.color = 'black';
+    	} else {
+    		config.backgroundColor = '#505050';
+    		config.color = '#ffffff';
+    	}
+    	defaultCellRenderer(gc, config);
+    	borderFunc(gc, config);
+		whiteLineFunc(gc, config);
+    });
+
+
+
+
+
+  });
+</script>
+</body>
+</html>
+ 
