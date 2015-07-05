@@ -30,7 +30,9 @@ function Grid(domElement, model, properties) {
     this.addProperties(properties);
 
     var canvas = document.createElement('canvas');
+    var headerCanvas = document.createElement('canvas');
     var context = canvas.getContext("2d");
+    var headerContext = headerCanvas.getContext("2d");
     var columns = [];
 
     model.changed = function(x, y) {
@@ -41,12 +43,20 @@ function Grid(domElement, model, properties) {
         return canvas;
     };
 
+    this.getHeaderCanvas = function() {
+        return headerCanvas;
+    };
+
     this.getContainer = function() {
         return domElement;
     };
 
     this.getContext = function() {
         return context;
+    };
+
+    this.getHeaderContext = function() {
+        return headerContext;
     };
 
     this.getModel = function() {
@@ -109,14 +119,6 @@ Grid.prototype.getDefaultProperties = function() {
         defaultFixedColumnWidth: 100,
         cellPadding: 5
     };
-};
-
-Grid.prototype.initialize = function() {
-    var container = this.getContainer();
-    container.style.overflow = 'auto';
-    this.getContainer().appendChild(this.getCanvas());
-    this.checkCanvasBounds();
-    this.beginResizing();
 };
 
 Grid.prototype.getTextWidth = function(gc, string) {
@@ -195,17 +197,61 @@ Grid.prototype.addProperties = function(properties) {
     this.merge(this.options, properties);
 };
 
+Grid.prototype.initialize = function() {
+	var self = this;
+	var fixedRowHeight = this.getFixedRowHeight();
+    var container = this.getContainer();
+    var divHeader = document.createElement('div');
+    divHeader.style.position = 'absolute';
+	divHeader.style.top = 0;
+	divHeader.style.right = 0;
+	divHeader.style.bottom = fixedRowHeight + 'px';
+	divHeader.style.left = 0;
+	divHeader.style.overflow = 'hidden';
+
+    divHeader.appendChild(this.getHeaderCanvas());
+    container.appendChild(divHeader);
+
+    var divMain = document.createElement('div');
+    divMain.style.position = 'absolute';
+	divMain.style.top = fixedRowHeight + 'px';
+	divMain.style.right = 0;
+	divMain.style.bottom = 0;
+	divMain.style.left = 0;
+	divMain.style.overflow = 'auto';
+	divMain.addEventListener("scroll", function(e) {
+		divHeader.scrollLeft = e.target.scrollLeft;
+	});
+
+    divMain.appendChild(this.getCanvas());
+    container.appendChild(divMain);
+
+    this.checkCanvasBounds();
+    this.beginResizing();
+};
+
+
 Grid.prototype.checkCanvasBounds = function() {
     var container = this.getContainer();
+    var headerHeight = this.getFixedRowHeight();
     var computedWidth = this.computeMainAreaFullWidth();
-    var computedHeight = this.computeMainAreaFullHeight();
+    var computedHeight = this.computeMainAreaFullHeight() - headerHeight;
 
     if (this.width === computedWidth && this.height === computedHeight) {
         return;
     }
 
     this.viewport = container.getBoundingClientRect();
+
+    var headerCanvas = this.getHeaderCanvas();
     var canvas = this.getCanvas();
+
+    headerCanvas.style.position = 'relative';
+    headerCanvas.setAttribute('width', computedWidth);
+    headerCanvas.setAttribute('height', headerHeight);
+
+    canvas.style.position = 'relative';
+    canvas.style.top = '1px';
     canvas.setAttribute('width', computedWidth);
     canvas.setAttribute('height', computedHeight);
 
@@ -213,6 +259,11 @@ Grid.prototype.checkCanvasBounds = function() {
     this.height = computedHeight;
 
     this.paintAll();
+};
+
+
+Grid.prototype.getViewportVisibleGridCoordinates = function() {
+	//this is an important optimization
 };
 
 Grid.prototype.computeMainAreaFullHeight = function() {
@@ -288,10 +339,6 @@ Grid.prototype.getBoundsOfCell = function(x, y) {
     return result;
 };
 
-Grid.prototype.getViewportVisibleGridCoordinates = function() {
-
-};
-
 Grid.prototype.getFixedRowHeight = function() {
     var value = this.resolveProperty('defaultFixedRowHeight');
     return value;
@@ -330,25 +377,32 @@ Grid.prototype.addColumn = function(field, label, type, width, renderer) {
 };
 
 Grid.prototype.paintAll = function() {
+	var self = this;
+	var config = Object.create(this.getDefaultProperties());
+
+	config.getTextHeight = function(font) {
+		return self.getTextHeight(font);
+	};
+
+	config.getTextWidth = function(gc, text) {
+		return self.getTextWidth(gc, text);
+	};
+
+
+    var numCols = this.getColumnCount();
+    var numRows = this.getRowCount();
+	this.paintMainArea(config, numCols, numRows);
+	this.paintHeaders(config, numCols, 1);
+}
+
+Grid.prototype.paintMainArea = function(config, numCols, numRows) {
     try {
         var self = this;
-        var config = Object.create(this.getDefaultProperties());
-
-        config.getTextHeight = function(font) {
-            return self.getTextHeight(font);
-        };
-
-        config.getTextWidth = function(gc, text) {
-            return self.getTextWidth(gc, text);
-        };
-
         var context = this.getContext();
         context.save();
-        var numCols = this.getColumnCount();
-        var numRows = this.getRowCount();
         for (var x = 0; x < numCols; x++) {
             for (var y = 0; y < numRows; y++) {
-                this.paintCell(x, y, config);
+                this.paintCell(context, x, y, config);
             }
         }
 
@@ -358,13 +412,45 @@ Grid.prototype.paintAll = function() {
     }
 };
 
-Grid.prototype.paintCell = function(x, y, config) {
+
+Grid.prototype.paintHeaders = function(config, numCols, numRows) {
+    try {
+    	config.halign = 'center';
+    	config.cellPadding = '0px';
+        var self = this;
+        var context = this.getHeaderContext();
+        context.save();
+        for (var x = 0; x < numCols; x++) {
+            for (var y = 0; y < numRows; y++) {
+                this.paintHeaderCell(context, x, y, config);
+            }
+        }
+
+    } catch (e) {
+        context.restore();
+        console.log(e);
+    }
+};
+
+Grid.prototype.paintCell = function(context, x, y, config) {
     var model = this.getModel();
     var bounds = this.getBoundsOfCell(x, y);
-    var context = this.getContext();
     var column = this.getColumn(x);
     var renderer = column.getRenderer();
     var value = this.getValue(x, y);
+    config.value = value;
+    config.x = x;
+    config.y = y;
+    config.bounds = bounds;
+    renderer(context, config);
+};
+
+
+Grid.prototype.paintHeaderCell = function(context, x, y, config) {
+    var bounds = this.getBoundsOfCell(x, y);
+    var column = this.getColumn(x);
+    var renderer = column.getRenderer();
+    var value = column.getLabel();
     config.value = value;
     config.x = x;
     config.y = y;
