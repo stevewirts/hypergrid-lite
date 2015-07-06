@@ -219,6 +219,7 @@ Grid.prototype.initialize = function() {
 	divMain.style.bottom = 0;
 	divMain.style.left = 0;
 	divMain.style.overflow = 'auto';
+    divMain.style.msOverflowStyle = '-ms-autohiding-scrollbar';
 	divMain.addEventListener("scroll", function(e) {
 		divHeader.scrollLeft = e.target.scrollLeft;
 	});
