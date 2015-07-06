@@ -177,7 +177,7 @@ Grid.prototype.getTextHeight = function(font) {
         result.descent = result.height - result.ascent;
 
     } finally {
-        div.remove();
+        document.body.removeChild(div);
     }
     if (result.height !== 0) {
         fontData[font] = result;
@@ -205,7 +205,7 @@ Grid.prototype.initialize = function() {
     divHeader.style.position = 'absolute';
 	divHeader.style.top = 0;
 	divHeader.style.right = 0;
-	divHeader.style.bottom = fixedRowHeight + 'px';
+	//divHeader.style.bottom = fixedRowHeight + 'px';
 	divHeader.style.left = 0;
 	divHeader.style.overflow = 'hidden';
 
