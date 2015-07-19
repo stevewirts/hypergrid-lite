@@ -323,9 +323,11 @@ function identity (arg) {
  * indexes, they are the numbers in the following diagram: 
  * 
  * |0|____val____|1|_____val_____|2|_____val____|3| etc
+ *
+ * ** All column values are assumed to be truthy ** 
  * 
  * @param  {array} arr      array to reorder, not mutated
- * @param  {number} from     index 
+ * @param  {number} from     normal index of column to move 
  * @param  {number} toBorder border index
  * @return {array}          new array in new order
  */
@@ -339,122 +341,114 @@ function moveIdx (arr, from, toBorder) {
 }
 
 Grid.prototype.initialize = function() {
-	var self = this;
-	var fixedRowHeight = this.getFixedRowHeight();
+    var self = this;
+    var fixedRowHeight = this.getFixedRowHeight();
     var container = this.getContainer();
     var divHeader = document.createElement('div');
     divHeader.style.position = 'absolute';
-	divHeader.style.top = 0;
-	divHeader.style.right = 0;
-	//divHeader.style.bottom = fixedRowHeight + 'px';
-	divHeader.style.left = 0;
-	divHeader.style.overflow = 'hidden';
+    divHeader.style.top = 0;
+    divHeader.style.right = 0;
+    divHeader.style.left = 0;
+    divHeader.style.overflow = 'hidden';
 
     divHeader.appendChild(this.getHeaderCanvas());
     container.appendChild(divHeader);
 
 
-  var dragHeader, mouseDown, x, y, startingTrans, hovering, headerRect, fuzzyBorders, widths, clickedCol;
+    var dragHeader, mouseDown, x, y, startingTrans, hovering, headerRect, fuzzyBorders, widths, clickedCol, borderHit;
 
-  var inserter = document.createElement('div');
+    var inserter = document.createElement('div');
 
-  inserter.style.height = '20px';
-  inserter.style.width = '5px';
-  inserter.style.backgroundColor = 'goldenrod';
-  inserter.style.position = 'absolute';
-  inserter.top = 0;
-  inserter.left = 0;
+    inserter.style.height = '20px';
+    inserter.style.width = '5px';
+    inserter.style.backgroundColor = 'goldenrod';
+    inserter.style.position = 'absolute';
+    inserter.style.display = 'none';
+    inserter.top = 0;
+    inserter.left = 0;
 
-  document.body.appendChild(inserter);
-
-
-  document.addEventListener('mousemove', function(e){
-    if (mouseDown && dragHeader && (e.x >= headerRect.left)
-        && (e.x <= (headerRect.left + headerRect.width))) {
-      
-      var xMovement, yMovement, movementString,
-        left = headerRect.left;
+    document.body.appendChild(inserter);
 
 
-        xMovement = startingTrans[0] - (x - e.x);
-        yMovement = 0; //startingTrans[1] - (y - e.y);
+    document.addEventListener('mousemove', function(e) {
+        if (mouseDown && dragHeader && (e.x >= headerRect.left) && (e.x <= (headerRect.left + headerRect.width))) {
 
-        movementString = ['translateX(',
-                          xMovement,
-                          'px) translateY(',
-                          yMovement,
-                          'px)'
-                         ].join('');
-
-        dragHeader.style.transform = movementString;
-        dragHeader.style.zIndex = 10;
+            var xMovement, yMovement, movementString,
+                left = headerRect.left;
 
 
-        var rangeFunc = function (range) {
-            return inRange(range, e.x);
+            xMovement = startingTrans[0] - (x - e.x);
+            yMovement = 0;
+
+            movementString = ['translateX(',
+                xMovement,
+                'px) translateY(',
+                yMovement,
+                'px)'
+            ].join('');
+
+            dragHeader.style.transform = movementString;
+            dragHeader.style.zIndex = 10;
+
+
+            var rangeFunc = function(range) {
+                return inRange(range, e.x);
+            }
+
+            var normalizedBorders = fuzzyBorders.map(function(item) {
+                return item.map(add.bind(null, left));
+            })
+
+            borderHit = findIndex(normalizedBorders, rangeFunc);
+
+            if (borderHit !== -1) {
+                var inserterLeft = normalizedBorders[borderHit][0];
+
+                inserter.style.left = inserterLeft;
+                inserter.style.top = headerRect.top;
+                inserter.style.display = 'block';
+            } else {
+                inserter.style.display = 'none';
+            }
         }
+    })
 
-        var normalizedBorders = fuzzyBorders.map(function (item) {
-            return item.map(add.bind(null, left));
-        })
+    document.addEventListener('mouseup', function(evnt) {
 
-        var borderHit = findIndex(normalizedBorders, rangeFunc);
+        //if (evnt.target == divHeader) {
+        x = y = 0;
+        if (dragHeader) {
+            dragHeader.parentNode.removeChild(dragHeader);
+        }
+        dragHeader = null;
+        startingTrans = [0, 0];
+        mouseDown = false;
 
         if (borderHit !== -1) {
-            //console.log(normalizedBorders[borderHit])
-            var inserterLeft = normalizedBorders[borderHit][0];
+            var reordered = moveIdx(self.getColumns(), clickedCol, borderHit);
+            self.setColumns(reordered);
+            self.paintAll();
+        }
 
-            inserter.style.left = inserterLeft;
-            inserter.style.top = headerRect.top;
-        }   
-        //console.log(borderHit, [e.x, headerRect.left]);
-
-        // |___0___|_____1____|________2_____|_______3_____|
-        // |___2___|_____1____|________0_____|_______3_____|
-        
-        // 0___ ___1____ ____ 2________ _____3_______ _____4
-        
-        [a , b, c, d]
-        splice (idx, 1)
-
-        c, a , b ,d 
-        
+        inserter.style.display = 'none';
+        //}
+    })
 
 
-    }
-
-    //evnt.x - (evnt.offsetX - colOffset)
-
-  })
-
-  document.addEventListener('mouseup', function(evnt) {
-
-      //if (evnt.target == divHeader) {
-          x = y = 0;
-          if (dragHeader) {
-            dragHeader.parentNode.removeChild(dragHeader);
-          }
-          dragHeader = null;
-          startingTrans = [0, 0];
-          mouseDown = false;
-      //}
-  })
-
-
-    divHeader.addEventListener('mouseenter', function(evnt){
-        console.log('over');
+    divHeader.addEventListener('mouseenter', function(evnt) {
         hovering = true;
     });
-    divHeader.addEventListener('mouseleave', function(evnt){
+
+
+    divHeader.addEventListener('mouseleave', function(evnt) {
         hovering = false;
-        console.log('and out');
     });
 
 
-    divHeader.addEventListener('mousedown', function(evnt){
+    divHeader.addEventListener('mousedown', function(evnt) {
         mouseDown = true;
 
-        widths = self.getColumns().map(function(col){
+        widths = self.getColumns().map(function(col) {
             return col.getWidth();
         });
 
@@ -466,25 +460,27 @@ Grid.prototype.initialize = function() {
 
         var subCtx = subCanvas.getContext('2d')
         var clickedColWidth = widths[clickedCol];
+        var transform;
 
         //var clickOffset = evnt.offsetX - colOffset;
 
 
         headerRect = headerCanvas.getBoundingClientRect();
         fuzzyBorders = genFuzzyBorders(widths, 3);
-  
+
         var ctx = headerCanvas.getContext('2d');
 
         console.log(colOffset, widths[clickedCol], fuzzyBorders);
-        
+
         subCanvas.width = clickedColWidth;
         subCanvas.height = 20;
         subCanvas.style.opacity = '.45';
         subCanvas.style.position = 'absolute';
-        subCanvas.style.left = evnt.x - (evnt.offsetX - colOffset) ;//+ (clickedColWidth / 2);
+        subCanvas.style.left = evnt.x - (evnt.offsetX - colOffset); 
+        subCanvas.style.top = headerRect.top; 
+        subCanvas.style.cursor = 'pointer';
 
         subCtx.drawImage(
-            //ctx.canvas.toDataURL(), 
             headerCanvas,
             colOffset, // sx, 
             0, // sy, 
@@ -492,42 +488,38 @@ Grid.prototype.initialize = function() {
             20, // sHeight, 
             0, // dx, 
             0, // dy, 
-            clickedColWidth, 
+            clickedColWidth,
             20);
 
 
         document.body.appendChild(subCanvas);
 
 
-      var   transform;
+        
 
-    dragHeader = subCanvas;
-        var targetedElement = dragHeader;
-        transform = targetedElement.style.transform;
+        dragHeader = subCanvas;
+
+        transform = dragHeader.style.transform;
         x = evnt.x;
         y = evnt.y;
         startingTrans = transform.match(/([^(]?\d+)/g) || [0, 0];
-  
-
-        //image.src = headerCanvas
-
 
     });
 
 
     var divMain = document.createElement('div');
     divMain.style.position = 'absolute';
-	divMain.style.top = fixedRowHeight + 'px';
-	divMain.style.right = 0;
-	divMain.style.bottom = 0;
-	divMain.style.left = 0;
-	divMain.style.overflow = 'auto';
+    divMain.style.top = fixedRowHeight + 'px';
+    divMain.style.right = 0;
+    divMain.style.bottom = 0;
+    divMain.style.left = 0;
+    divMain.style.overflow = 'auto';
     divMain.style.msOverflowStyle = '-ms-autohiding-scrollbar';
-	divMain.addEventListener("scroll", function(e) {
-		divHeader.scrollLeft = e.target.scrollLeft;
-	});
+    divMain.addEventListener("scroll", function(e) {
+        divHeader.scrollLeft = e.target.scrollLeft;
+    });
 
-    
+
 
     divMain.appendChild(this.getCanvas());
     container.appendChild(divMain);
@@ -535,7 +527,6 @@ Grid.prototype.initialize = function() {
     this.checkCanvasBounds();
     this.beginResizing();
 };
-
 
 Grid.prototype.checkCanvasBounds = function() {
     var container = this.getContainer();
