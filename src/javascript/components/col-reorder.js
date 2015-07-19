@@ -1,12 +1,11 @@
-
 /**
  * given an array of numbers, return the index at which the value would fall
  * summing the array as you go
  * @param  {array} arr array of numbers
  * @param  {number} val get the index where this would fall
- * @return {number}     index or -1 if not found 
+ * @return {number}     index or -1 if not found
  */
-function contains(arr, val){
+function contains(arr, val) {
     var total = 0,
         len = arr.length,
         i;
@@ -36,38 +35,40 @@ function add(a, b) {
  * @param  {number} idx index
  * @return {number}     partial sum
  */
-function partialSum (arr, idx) {
+function partialSum(arr, idx) {
     var subset = arr.slice(0, idx);
 
-    return subset.reduce(add, 0);   
+    return subset.reduce(add, 0);
 }
 
 
 /**
- * map over an array returning an array of the same length containing the 
+ * map over an array returning an array of the same length containing the
  * sum at each place
  * @param  {array} arr an array of numbers
  * @return {array}     the array of sums
  */
-function runningSums (arr) {
+function runningSums(arr) {
     var sum = 0;
 
-    return arr.map(function (item) {
+    return arr.map(function(item) {
         return sum += item;
     });
 }
 
 
 /**
- * given an array of boarders, generate a set of x-coords that represents the 
+ * given an array of boarders, generate a set of x-coords that represents the
  * the area around the boarders +/- the threshold given
- * @param  {array} arr    array of borders 
+ * @param  {array} arr    array of borders
  * @param  {number} thresh the threshold around each
  * @return {array}        an array of arrays
  */
-function genFuzzyBorders (arr, thresh) {
+function genFuzzyBorders(arr, thresh) {
     var len = arr.length,
-        borders = [[0, thresh]],
+        borders = [
+            [0, thresh]
+        ],
         maxRight = arr.reduce(add, 0),
         sums = runningSums(arr),
         i, curr;
@@ -77,7 +78,8 @@ function genFuzzyBorders (arr, thresh) {
 
         borders.push([
             Math.max(0, curr - thresh),
-            Math.min(curr + thresh, maxRight)]);
+            Math.min(curr + thresh, maxRight)
+        ]);
     }
 
     return borders
@@ -85,55 +87,55 @@ function genFuzzyBorders (arr, thresh) {
 
 
 /**
- * A version of the findIndex polyfill found here: 
+ * A version of the findIndex polyfill found here:
  * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/findIndex
  *
- * adapted to run as stand alone function  
+ * adapted to run as stand alone function
  */
 function findIndex(lst, predicate) {
-    
+
     var list = Object(lst);
     var length = list.length >>> 0;
     var value;
 
     for (var i = 0; i < length; i++) {
-      value = list[i];
-      if (predicate.call(null, value, i, list)) {
-        return i;
-      }
+        value = list[i];
+        if (predicate.call(null, value, i, list)) {
+            return i;
+        }
     }
     return -1;
 };
 
 
-function inRange (range, value) {
-    return value >= range[0] && value <= range[1]; 
+function inRange(range, value) {
+    return value >= range[0] && value <= range[1];
 }
 
 /**
- * return whatever gets passed in. can be useful in a filter function where 
- * truthy values are the only valid ones 
- * @param  {any} arg any value 
- * @return {any}     whatever was passed in 
+ * return whatever gets passed in. can be useful in a filter function where
+ * truthy values are the only valid ones
+ * @param  {any} arg any value
+ * @return {any}     whatever was passed in
  */
-function identity (arg) {
+function identity(arg) {
     return arg;
 }
 
 /**
  * move an array index to the 'border' passed in. the borders are not array
- * indexes, they are the numbers in the following diagram: 
- * 
+ * indexes, they are the numbers in the following diagram:
+ *
  * |0|____val____|1|_____val_____|2|_____val____|3| etc
  *
- * ** All column values are assumed to be truthy (objects in mind...) ** 
- * 
+ * ** All column values are assumed to be truthy (objects in mind...) **
+ *
  * @param  {array} arr      array to reorder, not mutated
- * @param  {number} from     normal index of column to move 
+ * @param  {number} from     normal index of column to move
  * @param  {number} toBorder border index
  * @return {array}          new array in new order
  */
-function moveIdx (arr, from, toBorder) {
+function moveIdx(arr, from, toBorder) {
     var reorderd = arr.slice(),
         mover = reorderd.splice(from, 1, undefined)[0];
 
@@ -144,21 +146,19 @@ function moveIdx (arr, from, toBorder) {
 
 
 
-
-
 function init(self, divHeader) {
 
 
     var widths = self.getColumns().map(function(col) {
-            return col.getWidth();
-        }),
-    	resizeThresh = 5,
+        return col.getWidth();
+    }),
+        resizeThresh = 5,
         fuzzyBorders = genFuzzyBorders(widths, resizeThresh),
         inserter = document.createElement('div'),
         headerCanvas = self.getHeaderCanvas(),
         headerRect = headerCanvas.getBoundingClientRect(),
         dragHeader, mouseDown, x, y, startingTrans, resizing,
-    	resizingCols, clickedCol, borderHit;
+        resizingCols, clickedCol, borderHit;
 
 
 
@@ -175,34 +175,49 @@ function init(self, divHeader) {
 
     document.addEventListener('mousemove', function(e) {
 
-    	var xMovement, yMovement, movementString,
-    	    left = headerRect.left,
-    	    rangeFunc, normalizedBorders,
-    	    inserterLeft, activeCol, activeColWidth,
-    	   	colResizeIndex;
+        var xMovement, yMovement, movementString,
+            left = headerRect.left,
+            rangeFunc, normalizedBorders,
+            inserterLeft, activeCol, activeColWidth,
+            colResizeIndex;
 
-    	widths = self.getColumns().map(function(col) {
+        widths = self.getColumns().map(function(col) {
             return col.getWidth();
         });
 
         fuzzyBorders = genFuzzyBorders(widths, resizeThresh),
 
-    	rangeFunc = function(range) {
-    	    return inRange(range, e.x);
-    	}
+        rangeFunc = function(range) {
+            return inRange(range, e.x);
+        }
 
-    	normalizedBorders = fuzzyBorders.map(function(item) {
-    	    return item.map(add.bind(null, left));
-    	})
+        normalizedBorders = fuzzyBorders.map(function(item) {
+            return item.map(add.bind(null, left));
+        })
 
-    	borderHit = findIndex(normalizedBorders, rangeFunc);
+        if (!resizing) {
+            borderHit = findIndex(normalizedBorders, rangeFunc);
+        }
+
+        if (resizing || (borderHit !== -1)) {
+            divHeader.style.cursor = 'col-resize';
+            resizingCols = true;
+
+            if (mouseDown) {
+                if (borderHit > 0) {
+                    console.log('ree')
+                    colResizeIndex = clickedCol;
+                    activeCol = self.getColumns()[colResizeIndex];
+                    activeColWidth = activeCol.getWidth();
+                    activeCol.setWidth(Math.max(0, activeColWidth + (e.x - x)));
+                    self.paintAll();
+                    resizing = true;
+                    x = e.x;
+                }
 
 
-        if (mouseDown 
-        	&& dragHeader 
-        	&& (e.x >= headerRect.left) 
-        	&& (e.x <= (headerRect.left + headerRect.width))
-        	&& !resizingCols) {
+            }
+        } else if (mouseDown && dragHeader && (e.x >= headerRect.left) && (e.x <= (headerRect.left + headerRect.width)) && !resizingCols) {
 
             xMovement = startingTrans[0] - (x - e.x);
             yMovement = 0;
@@ -225,34 +240,14 @@ function init(self, divHeader) {
             } else {
                 inserter.style.display = 'none';
             }
-        }
-        else if ((borderHit !== -1) || resizing) {
-            divHeader.style.cursor = 'col-resize';
-            resizingCols = true;
-
-            if (mouseDown) {
-                if (borderHit > 0) {
-                    colResizeIndex = clickedCol;
-                    activeCol = self.getColumns()[colResizeIndex];
-                    activeColWidth = activeCol.getWidth();
-                    activeCol.setWidth(Math.max(0, activeColWidth + (e.x - x)));
-                    self.paintAll();
-                    resizing = true;
-                    x = e.x;
-                }
-
-
-            }
-        }
-
-        else {
-        	divHeader.style.cursor = 'auto';	
-        	resizingCols = false;
+        } else {
+            divHeader.style.cursor = 'auto';
+            resizingCols = false;
         }
     })
 
     document.addEventListener('mouseup', function(evnt) {
-    	var reordered;
+        var reordered;
 
         x = y = 0;
 
@@ -295,17 +290,17 @@ function init(self, divHeader) {
 
 
         if (resizingCols) {
-        	// always resize l to r 
-        	clickedCol = contains(widths, evnt.offsetX - resizeThresh);
-        	return; // gross....
+            // always resize l to r 
+            clickedCol = contains(widths, evnt.offsetX - resizeThresh);
+            return; // gross....
         }
 
         var colOffset = partialSum(widths, clickedCol),
-        	image = new Image(),
-        	subCanvas = document.createElement('canvas'),
-        	subCtx = subCanvas.getContext('2d'),
-        	clickedColWidth = widths[clickedCol],
-        	transform, ctx;
+            image = new Image(),
+            subCanvas = document.createElement('canvas'),
+            subCtx = subCanvas.getContext('2d'),
+            clickedColWidth = widths[clickedCol],
+            transform, ctx;
 
         // body is prob not the best spot for this... 
         document.body.appendChild(subCanvas);
@@ -338,7 +333,7 @@ function init(self, divHeader) {
         dragHeader = subCanvas;
 
         transform = dragHeader.style.transform;
-        
+
         startingTrans = transform.match(/([^(]?\d+)/g) || [0, 0];
     });
 
