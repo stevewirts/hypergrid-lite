@@ -324,7 +324,7 @@ function identity (arg) {
  * 
  * |0|____val____|1|_____val_____|2|_____val____|3| etc
  *
- * ** All column values are assumed to be truthy ** 
+ * ** All column values are assumed to be truthy (generally objects...) ** 
  * 
  * @param  {array} arr      array to reorder, not mutated
  * @param  {number} from     normal index of column to move 
@@ -354,157 +354,158 @@ Grid.prototype.initialize = function() {
     divHeader.appendChild(this.getHeaderCanvas());
     container.appendChild(divHeader);
 
+    require('./col-reorder.js').init(self, divHeader);
 
-    var dragHeader, mouseDown, x, y, startingTrans, hovering, headerRect, fuzzyBorders, widths, clickedCol, borderHit;
+    // var dragHeader, mouseDown, x, y, startingTrans, hovering, headerRect, fuzzyBorders, widths, clickedCol, borderHit;
 
-    var inserter = document.createElement('div');
+    // var inserter = document.createElement('div');
 
-    inserter.style.height = '20px';
-    inserter.style.width = '5px';
-    inserter.style.backgroundColor = 'goldenrod';
-    inserter.style.position = 'absolute';
-    inserter.style.display = 'none';
-    inserter.top = 0;
-    inserter.left = 0;
+    // inserter.style.height = '20px';
+    // inserter.style.width = '5px';
+    // inserter.style.backgroundColor = 'goldenrod';
+    // inserter.style.position = 'absolute';
+    // inserter.style.display = 'none';
+    // inserter.top = 0;
+    // inserter.left = 0;
 
-    document.body.appendChild(inserter);
-
-
-    document.addEventListener('mousemove', function(e) {
-        if (mouseDown && dragHeader && (e.x >= headerRect.left) && (e.x <= (headerRect.left + headerRect.width))) {
-
-            var xMovement, yMovement, movementString,
-                left = headerRect.left;
+    // document.body.appendChild(inserter);
 
 
-            xMovement = startingTrans[0] - (x - e.x);
-            yMovement = 0;
+    // document.addEventListener('mousemove', function(e) {
+    //     if (mouseDown && dragHeader && (e.x >= headerRect.left) && (e.x <= (headerRect.left + headerRect.width))) {
 
-            movementString = ['translateX(',
-                xMovement,
-                'px) translateY(',
-                yMovement,
-                'px)'
-            ].join('');
-
-            dragHeader.style.transform = movementString;
-            dragHeader.style.zIndex = 10;
+    //         var xMovement, yMovement, movementString,
+    //             left = headerRect.left;
 
 
-            var rangeFunc = function(range) {
-                return inRange(range, e.x);
-            }
+    //         xMovement = startingTrans[0] - (x - e.x);
+    //         yMovement = 0;
 
-            var normalizedBorders = fuzzyBorders.map(function(item) {
-                return item.map(add.bind(null, left));
-            })
+    //         movementString = ['translateX(',
+    //             xMovement,
+    //             'px) translateY(',
+    //             yMovement,
+    //             'px)'
+    //         ].join('');
 
-            borderHit = findIndex(normalizedBorders, rangeFunc);
-
-            if (borderHit !== -1) {
-                var inserterLeft = normalizedBorders[borderHit][0];
-
-                inserter.style.left = inserterLeft;
-                inserter.style.top = headerRect.top;
-                inserter.style.display = 'block';
-            } else {
-                inserter.style.display = 'none';
-            }
-        }
-    })
-
-    document.addEventListener('mouseup', function(evnt) {
-
-        //if (evnt.target == divHeader) {
-        x = y = 0;
-        if (dragHeader) {
-            dragHeader.parentNode.removeChild(dragHeader);
-        }
-        dragHeader = null;
-        startingTrans = [0, 0];
-        mouseDown = false;
-
-        if (borderHit !== -1) {
-            var reordered = moveIdx(self.getColumns(), clickedCol, borderHit);
-            self.setColumns(reordered);
-            self.paintAll();
-        }
-
-        inserter.style.display = 'none';
-        //}
-    })
+    //         dragHeader.style.transform = movementString;
+    //         dragHeader.style.zIndex = 10;
 
 
-    divHeader.addEventListener('mouseenter', function(evnt) {
-        hovering = true;
-    });
+    //         var rangeFunc = function(range) {
+    //             return inRange(range, e.x);
+    //         }
+
+    //         var normalizedBorders = fuzzyBorders.map(function(item) {
+    //             return item.map(add.bind(null, left));
+    //         })
+
+    //         borderHit = findIndex(normalizedBorders, rangeFunc);
+
+    //         if (borderHit !== -1) {
+    //             var inserterLeft = normalizedBorders[borderHit][0];
+
+    //             inserter.style.left = inserterLeft;
+    //             inserter.style.top = headerRect.top;
+    //             inserter.style.display = 'block';
+    //         } else {
+    //             inserter.style.display = 'none';
+    //         }
+    //     }
+    // })
+
+    // document.addEventListener('mouseup', function(evnt) {
+
+    //     //if (evnt.target == divHeader) {
+    //     x = y = 0;
+    //     if (dragHeader) {
+    //         dragHeader.parentNode.removeChild(dragHeader);
+    //     }
+    //     dragHeader = null;
+    //     startingTrans = [0, 0];
+    //     mouseDown = false;
+
+    //     if (borderHit !== -1) {
+    //         var reordered = moveIdx(self.getColumns(), clickedCol, borderHit);
+    //         self.setColumns(reordered);
+    //         self.paintAll();
+    //     }
+
+    //     inserter.style.display = 'none';
+    //     //}
+    // })
 
 
-    divHeader.addEventListener('mouseleave', function(evnt) {
-        hovering = false;
-    });
+    // divHeader.addEventListener('mouseenter', function(evnt) {
+    //     hovering = true;
+    // });
 
 
-    divHeader.addEventListener('mousedown', function(evnt) {
-        mouseDown = true;
-
-        widths = self.getColumns().map(function(col) {
-            return col.getWidth();
-        });
-
-        clickedCol = contains(widths, evnt.offsetX);
-        var colOffset = offsetTil(widths, clickedCol);
-        var headerCanvas = self.getHeaderCanvas();
-        var image = new Image();
-        var subCanvas = document.createElement('canvas');
-
-        var subCtx = subCanvas.getContext('2d')
-        var clickedColWidth = widths[clickedCol];
-        var transform;
-
-        //var clickOffset = evnt.offsetX - colOffset;
+    // divHeader.addEventListener('mouseleave', function(evnt) {
+    //     hovering = false;
+    // });
 
 
-        headerRect = headerCanvas.getBoundingClientRect();
-        fuzzyBorders = genFuzzyBorders(widths, 3);
+    // divHeader.addEventListener('mousedown', function(evnt) {
+    //     mouseDown = true;
 
-        var ctx = headerCanvas.getContext('2d');
+    //     widths = self.getColumns().map(function(col) {
+    //         return col.getWidth();
+    //     });
 
-        console.log(colOffset, widths[clickedCol], fuzzyBorders);
+    //     clickedCol = contains(widths, evnt.offsetX);
+    //     var colOffset = offsetTil(widths, clickedCol);
+    //     va = self.getHeaderCanvas();
+    //     var image = new Image();
+    //     var subCanvas = document.createElement('canvas');
 
-        subCanvas.width = clickedColWidth;
-        subCanvas.height = 20;
-        subCanvas.style.opacity = '.45';
-        subCanvas.style.position = 'absolute';
-        subCanvas.style.left = evnt.x - (evnt.offsetX - colOffset); 
-        subCanvas.style.top = headerRect.top; 
-        subCanvas.style.cursor = 'pointer';
+    //     var subCtx = subCanvas.getContext('2d')
+    //     var clickedColWidth = widths[clickedCol];
+    //     var transform;
 
-        subCtx.drawImage(
-            headerCanvas,
-            colOffset, // sx, 
-            0, // sy, 
-            clickedColWidth, // sWidth, 
-            20, // sHeight, 
-            0, // dx, 
-            0, // dy, 
-            clickedColWidth,
-            20);
+    //     //var clickOffset = evnt.offsetX - colOffset;
 
 
-        document.body.appendChild(subCanvas);
+    //     headerRect = headerCanvas.getBoundingClientRect();
+    //     fuzzyBorders = genFuzzyBorders(widths, 3);
+
+    //     var ctx = headerCanvas.getContext('2d');
+
+    //     console.log(colOffset, widths[clickedCol], fuzzyBorders);
+
+    //     subCanvas.width = clickedColWidth;
+    //     subCanvas.height = 20;
+    //     subCanvas.style.opacity = '.45';
+    //     subCanvas.style.position = 'absolute';
+    //     subCanvas.style.left = evnt.x - (evnt.offsetX - colOffset); 
+    //     subCanvas.style.top = headerRect.top; 
+    //     subCanvas.style.cursor = 'pointer';
+
+    //     subCtx.drawImage(
+    //         headerCanvas,
+    //         colOffset, // sx, 
+    //         0, // sy, 
+    //         clickedColWidth, // sWidth, 
+    //         20, // sHeight, 
+    //         0, // dx, 
+    //         0, // dy, 
+    //         clickedColWidth,
+    //         20);
+
+
+    //     document.body.appendChild(subCanvas);
 
 
         
 
-        dragHeader = subCanvas;
+    //     dragHeader = subCanvas;
 
-        transform = dragHeader.style.transform;
-        x = evnt.x;
-        y = evnt.y;
-        startingTrans = transform.match(/([^(]?\d+)/g) || [0, 0];
+    //     transform = dragHeader.style.transform;
+    //     x = evnt.x;
+    //     y = evnt.y;
+    //     startingTrans = transform.match(/([^(]?\d+)/g) || [0, 0];
 
-    });
+    // });
 
 
     var divMain = document.createElement('div');
