@@ -158,7 +158,7 @@ function init(self, divHeader) {
         headerCanvas = self.getHeaderCanvas(),
         headerRect = headerCanvas.getBoundingClientRect(),
         dragHeader, mouseDown, x, y, startingTrans, resizing,
-        resizingCols, clickedCol, borderHit;
+        resizingCols, clickedCol, borderHit, reordering;
 
 
 
@@ -199,7 +199,7 @@ function init(self, divHeader) {
             borderHit = findIndex(normalizedBorders, rangeFunc);
         }
 
-        if (resizing || (borderHit !== -1)) {
+        if ( ( resizing || (borderHit !== -1)) && !reordering ) {
             divHeader.style.cursor = 'col-resize';
             resizingCols = true;
 
@@ -218,6 +218,8 @@ function init(self, divHeader) {
 
             }
         } else if (mouseDown && dragHeader && (e.x >= headerRect.left) && (e.x <= (headerRect.left + headerRect.width)) && !resizingCols) {
+
+            reordering = true;
 
             xMovement = startingTrans[0] - (x - e.x);
             yMovement = 0;
@@ -259,6 +261,7 @@ function init(self, divHeader) {
         startingTrans = [0, 0];
         mouseDown = false;
         resizing = false;
+        reordering = false;
 
         if (borderHit !== -1) {
             reordered = moveIdx(self.getColumns(), clickedCol, borderHit);
