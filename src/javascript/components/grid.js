@@ -71,6 +71,10 @@ function Grid(domElement, model, properties) {
         return columns;
     }
 
+    this.setColumns = function (cols) {
+        columns = cols;
+    }
+
     this.getOptions = function() {
         return options;
     };
@@ -198,31 +202,34 @@ Grid.prototype.addProperties = function(properties) {
 };
 
 Grid.prototype.initialize = function() {
-	var self = this;
-	var fixedRowHeight = this.getFixedRowHeight();
+    var self = this;
+    var fixedRowHeight = this.getFixedRowHeight();
     var container = this.getContainer();
     var divHeader = document.createElement('div');
     divHeader.style.position = 'absolute';
-	divHeader.style.top = 0;
-	divHeader.style.right = 0;
-	//divHeader.style.bottom = fixedRowHeight + 'px';
-	divHeader.style.left = 0;
-	divHeader.style.overflow = 'hidden';
+    divHeader.style.top = 0;
+    divHeader.style.right = 0;
+    divHeader.style.left = 0;
+    divHeader.style.overflow = 'hidden';
 
     divHeader.appendChild(this.getHeaderCanvas());
     container.appendChild(divHeader);
 
+    require('./col-reorder.js').init(self, divHeader);
+
     var divMain = document.createElement('div');
     divMain.style.position = 'absolute';
-	divMain.style.top = fixedRowHeight + 'px';
-	divMain.style.right = 0;
-	divMain.style.bottom = 0;
-	divMain.style.left = 0;
-	divMain.style.overflow = 'auto';
+    divMain.style.top = fixedRowHeight + 'px';
+    divMain.style.right = 0;
+    divMain.style.bottom = 0;
+    divMain.style.left = 0;
+    divMain.style.overflow = 'auto';
     divMain.style.msOverflowStyle = '-ms-autohiding-scrollbar';
-	divMain.addEventListener("scroll", function(e) {
-		divHeader.scrollLeft = e.target.scrollLeft;
-	});
+    divMain.addEventListener("scroll", function(e) {
+        divHeader.scrollLeft = e.target.scrollLeft;
+    });
+
+
 
     divMain.appendChild(this.getCanvas());
     container.appendChild(divMain);
@@ -230,7 +237,6 @@ Grid.prototype.initialize = function() {
     this.checkCanvasBounds();
     this.beginResizing();
 };
-
 
 Grid.prototype.checkCanvasBounds = function() {
     var container = this.getContainer();
