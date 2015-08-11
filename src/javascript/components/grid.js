@@ -433,9 +433,7 @@ Grid.prototype.paintHeaders = function(config, numCols, numRows) {
         var context = this.getHeaderContext();
         context.save();
         for (var x = 0; x < numCols; x++) {
-            for (var y = 0; y < numRows; y++) {
-                this.paintHeaderCell(context, x, y, config);
-            }
+            this.paintHeaderCell(context, x, config);
         }
 
     } catch (e) {
@@ -454,11 +452,13 @@ Grid.prototype.paintCell = function(context, x, y, config) {
     config.x = x;
     config.y = y;
     config.bounds = bounds;
+    config.type = 'cell';
     renderer(context, config);
 };
 
 
-Grid.prototype.paintHeaderCell = function(context, x, y, config) {
+Grid.prototype.paintHeaderCell = function(context, x, config) {
+    var y = 0;
     var bounds = this.getBoundsOfCell(x, y);
     var column = this.getColumn(x);
     var renderer = column.getRenderer();
@@ -467,6 +467,7 @@ Grid.prototype.paintHeaderCell = function(context, x, y, config) {
     config.x = x;
     config.y = y;
     config.bounds = bounds;
+    config.type = 'header';
     renderer(context, config);
 };
 
