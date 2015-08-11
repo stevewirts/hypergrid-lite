@@ -125,6 +125,22 @@ Grid.prototype.getDefaultProperties = function() {
     };
 };
 
+Grid.prototype.getPaintConfig = function() {
+    var self = this;
+
+    var config = Object.create(this.getDefaultProperties());
+
+    config.getTextHeight = function(font) {
+        return self.getTextHeight(font);
+    };
+
+    config.getTextWidth = function(gc, text) {
+        return self.getTextWidth(gc, text);
+    };
+
+    return config;
+};
+
 Grid.prototype.getTextWidth = function(gc, string) {
     if (string === null || string === undefined) {
         return 0;
@@ -384,18 +400,7 @@ Grid.prototype.addColumn = function(field, label, type, width, renderer) {
 };
 
 Grid.prototype.paintAll = function() {
-	var self = this;
-	var config = Object.create(this.getDefaultProperties());
-
-	config.getTextHeight = function(font) {
-		return self.getTextHeight(font);
-	};
-
-	config.getTextWidth = function(gc, text) {
-		return self.getTextWidth(gc, text);
-	};
-
-
+    var config = this.getPaintConfig();
     var numCols = this.getColumnCount();
     var numRows = this.getRowCount();
 	this.paintMainArea(config, numCols, numRows);
