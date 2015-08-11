@@ -27,8 +27,6 @@ function Grid(domElement, model, properties) {
     var self = this;
 
     var options = this.getDefaultProperties();
-    this.addProperties(properties);
-
     var canvas = document.createElement('canvas');
     var headerCanvas = document.createElement('canvas');
     var context = canvas.getContext("2d");
@@ -83,6 +81,8 @@ function Grid(domElement, model, properties) {
         options = newOptions;
     };
 
+    this.addProperties(properties);
+
     this.initialize()
 };
 
@@ -128,7 +128,7 @@ Grid.prototype.getDefaultProperties = function() {
 Grid.prototype.getPaintConfig = function() {
     var self = this;
 
-    var config = Object.create(this.getDefaultProperties());
+    var config = Object.create(this.getOptions());
 
     config.getTextHeight = function(font) {
         return self.getTextHeight(font);
@@ -214,7 +214,7 @@ Grid.prototype.merge = function(properties1, properties2) {
 };
 
 Grid.prototype.addProperties = function(properties) {
-    this.merge(this.options, properties);
+    this.merge(this.getOptions(), properties);
 };
 
 Grid.prototype.initialize = function() {
