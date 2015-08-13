@@ -1,12 +1,12 @@
 'use strict';
 
 var Column = require('./column.js');
-var SimpleLRU = require('simple-lru');
+var LRUCache = require('lru-cache');
 var defaultcellrenderer = require('./defaultcellrenderer.js');
 var resizables = [];
 var resizeLoopRunning = true;
 var fontData = {};
-var textWidthCache = new SimpleLRU(10000);
+var textWidthCache = new LRUCache({ max: 10000 });
 
 
 var resizablesLoopFunction = function(now) {
@@ -27,8 +27,6 @@ function Grid(domElement, model, properties) {
     var self = this;
 
     var options = this.getDefaultProperties();
-    this.addProperties(properties);
-
     var canvas = document.createElement('canvas');
     var headerCanvas = document.createElement('canvas');
     var context = canvas.getContext("2d");
@@ -71,6 +69,10 @@ function Grid(domElement, model, properties) {
         return columns;
     }
 
+    this.setColumns = function (cols) {
+        columns = cols;
+    }
+
     this.getOptions = function() {
         return options;
     };
@@ -78,6 +80,8 @@ function Grid(domElement, model, properties) {
     this.setOptions = function(newOptions) {
         options = newOptions;
     };
+
+    this.addProperties(properties);
 
     this.initialize()
 };
@@ -119,6 +123,22 @@ Grid.prototype.getDefaultProperties = function() {
         defaultFixedColumnWidth: 100,
         cellPadding: 5
     };
+};
+
+Grid.prototype.getPaintConfig = function() {
+    var self = this;
+
+    var config = Object.create(this.getOptions());
+
+    config.getTextHeight = function(font) {
+        return self.getTextHeight(font);
+    };
+
+    config.getTextWidth = function(gc, text) {
+        return self.getTextWidth(gc, text);
+    };
+
+    return config;
 };
 
 Grid.prototype.getTextWidth = function(gc, string) {
@@ -194,35 +214,38 @@ Grid.prototype.merge = function(properties1, properties2) {
 };
 
 Grid.prototype.addProperties = function(properties) {
-    this.merge(this.options, properties);
+    this.merge(this.getOptions(), properties);
 };
 
 Grid.prototype.initialize = function() {
-	var self = this;
-	var fixedRowHeight = this.getFixedRowHeight();
+    var self = this;
+    var fixedRowHeight = this.getFixedRowHeight();
     var container = this.getContainer();
     var divHeader = document.createElement('div');
     divHeader.style.position = 'absolute';
-	divHeader.style.top = 0;
-	divHeader.style.right = 0;
-	//divHeader.style.bottom = fixedRowHeight + 'px';
-	divHeader.style.left = 0;
-	divHeader.style.overflow = 'hidden';
+    divHeader.style.top = 0;
+    divHeader.style.right = 0;
+    divHeader.style.left = 0;
+    divHeader.style.overflow = 'hidden';
 
     divHeader.appendChild(this.getHeaderCanvas());
     container.appendChild(divHeader);
 
+    require('./col-reorder.js').init(self, divHeader);
+
     var divMain = document.createElement('div');
     divMain.style.position = 'absolute';
-	divMain.style.top = fixedRowHeight + 'px';
-	divMain.style.right = 0;
-	divMain.style.bottom = 0;
-	divMain.style.left = 0;
-	divMain.style.overflow = 'auto';
+    divMain.style.top = fixedRowHeight + 'px';
+    divMain.style.right = 0;
+    divMain.style.bottom = 0;
+    divMain.style.left = 0;
+    divMain.style.overflow = 'auto';
     divMain.style.msOverflowStyle = '-ms-autohiding-scrollbar';
-	divMain.addEventListener("scroll", function(e) {
-		divHeader.scrollLeft = e.target.scrollLeft;
-	});
+    divMain.addEventListener("scroll", function(e) {
+        divHeader.scrollLeft = e.target.scrollLeft;
+    });
+
+
 
     divMain.appendChild(this.getCanvas());
     container.appendChild(divMain);
@@ -230,7 +253,6 @@ Grid.prototype.initialize = function() {
     this.checkCanvasBounds();
     this.beginResizing();
 };
-
 
 Grid.prototype.checkCanvasBounds = function() {
     var container = this.getContainer();
@@ -378,18 +400,7 @@ Grid.prototype.addColumn = function(field, label, type, width, renderer) {
 };
 
 Grid.prototype.paintAll = function() {
-	var self = this;
-	var config = Object.create(this.getDefaultProperties());
-
-	config.getTextHeight = function(font) {
-		return self.getTextHeight(font);
-	};
-
-	config.getTextWidth = function(gc, text) {
-		return self.getTextWidth(gc, text);
-	};
-
-
+    var config = this.getPaintConfig();
     var numCols = this.getColumnCount();
     var numRows = this.getRowCount();
 	this.paintMainArea(config, numCols, numRows);
@@ -422,9 +433,7 @@ Grid.prototype.paintHeaders = function(config, numCols, numRows) {
         var context = this.getHeaderContext();
         context.save();
         for (var x = 0; x < numCols; x++) {
-            for (var y = 0; y < numRows; y++) {
-                this.paintHeaderCell(context, x, y, config);
-            }
+            this.paintHeaderCell(context, x, config);
         }
 
     } catch (e) {
@@ -443,11 +452,13 @@ Grid.prototype.paintCell = function(context, x, y, config) {
     config.x = x;
     config.y = y;
     config.bounds = bounds;
+    config.type = 'cell';
     renderer(context, config);
 };
 
 
-Grid.prototype.paintHeaderCell = function(context, x, y, config) {
+Grid.prototype.paintHeaderCell = function(context, x, config) {
+    var y = 0;
     var bounds = this.getBoundsOfCell(x, y);
     var column = this.getColumn(x);
     var renderer = column.getRenderer();
@@ -456,6 +467,7 @@ Grid.prototype.paintHeaderCell = function(context, x, y, config) {
     config.x = x;
     config.y = y;
     config.bounds = bounds;
+    config.type = 'header';
     renderer(context, config);
 };
 
