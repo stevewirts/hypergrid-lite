@@ -1,12 +1,12 @@
 'use strict';
 
 var Column = require('./column.js');
-var SimpleLRU = require('simple-lru');
+var LRUCache = require('lru-cache');
 var defaultcellrenderer = require('./defaultcellrenderer.js');
 var resizables = [];
 var resizeLoopRunning = true;
 var fontData = {};
-var textWidthCache = new SimpleLRU(10000);
+var textWidthCache = new LRUCache({ max: 10000 });
 
 
 var resizablesLoopFunction = function(now) {
