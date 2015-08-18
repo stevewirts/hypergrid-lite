@@ -1,118 +1,4 @@
 /**
- * given an array of numbers, return the index at which the value would fall
- * summing the array as you go
- * @param  {array} arr array of numbers
- * @param  {number} val get the index where this would fall
- * @return {number}     index or -1 if not found
- */
-function contains(arr, val) {
-    var total = 0,
-        len = arr.length,
-        i;
-
-    for (i = 0; i < len; i++) {
-        total += arr[i];
-
-        if (val < total) {
-            return i;
-        }
-    }
-
-    return -1;
-}
-
-
-/**
- * consult the nearest kindergarten teacher...
- */
-function add(a, b) {
-    return a + b;
-}
-
-/**
- * sum until the given index
- * @param  {array} arr array to partial sum
- * @param  {number} idx index
- * @return {number}     partial sum
- */
-function partialSum(arr, idx) {
-    var subset = arr.slice(0, idx);
-
-    return subset.reduce(add, 0);
-}
-
-
-/**
- * map over an array returning an array of the same length containing the
- * sum at each place
- * @param  {array} arr an array of numbers
- * @return {array}     the array of sums
- */
-function runningSums(arr) {
-    var sum = 0;
-
-    return arr.map(function(item) {
-        return sum += item;
-    });
-}
-
-
-/**
- * given an array of boarders, generate a set of x-coords that represents the
- * the area around the boarders +/- the threshold given
- * @param  {array} arr    array of borders
- * @param  {number} thresh the threshold around each
- * @return {array}        an array of arrays
- */
-function genFuzzyBorders(arr, thresh) {
-    var len = arr.length,
-        borders = [
-            [0, thresh]
-        ],
-        maxRight = arr.reduce(add, 0),
-        sums = runningSums(arr),
-        i, curr;
-
-    for (i = 0; i < len; i++) {
-        curr = sums[i];
-
-        borders.push([
-            Math.max(0, curr - thresh),
-            Math.min(curr + thresh, maxRight)
-        ]);
-    }
-
-    return borders
-}
-
-
-/**
- * A version of the findIndex polyfill found here:
- * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/findIndex
- *
- * adapted to run as stand alone function
- */
-function findIndex(lst, predicate) {
-
-    var list = Object(lst);
-    var length = list.length >>> 0;
-    var value;
-
-    for (var i = 0; i < length; i++) {
-        value = list[i];
-        if (predicate.call(null, value, i, list)) {
-            return i;
-        }
-    }
-    return -1;
-};
-
-
-function inRange(range, value) {
-    return value >= range[0] && value <= range[1];
-}
-
-/**
  * return whatever gets passed in. can be useful in a filter function where
  * truthy values are the only valid ones
  * @param  {any} arg any value
@@ -144,24 +30,94 @@ function moveIdx(arr, from, toBorder) {
     return reorderd.filter(identity);
 }
 
+/*
+ * detect which column is nearest to a mouse event
+ * @param  {Grid}   grid the hypergrid-lite object
+ * @param  {Event}  evt  the mouse event to look near
+ * @return {object}      object with nearest column, its dimensions and index
+ */
+function detectNearestColumn(grid, evt) {
+    var column;
+    var columns = grid.getColumns();
+    var headerCanvas = grid.getHeaderCanvas();
+    var headerRect = headerCanvas.getBoundingClientRect();
+    var columnLeft = headerRect.left;
+    var columnRight = headerRect.left;
+    var indexOfNearestColumn = columns.length - 1;
 
+    for(var c = 0; c < columns.length; c++) {
+        column = columns[c];
+        columnLeft = columnRight;
+        columnRight += column.getWidth();
+        // Note: when no column matches this condition,
+        // `indexOfNearestColumn` will be the last column.
+        if(evt.clientX < columnRight) {
+            indexOfNearestColumn = c;
+            break;
+        }
+    }
+
+    return {
+        column: column,
+        columnLeft: columnLeft,
+        columnRight: columnRight,
+        index: indexOfNearestColumn
+    }
+}
+
+/*
+ * detect if a mouse event is in a column's resize area
+ * @param  {Grid}   grid the hypergrid-lite object
+ * @param  {Event}  evt  the mouse event to look near
+ * @return {object}      the column whose resize area the mouse is in, or null
+ */
+function detectResizingAreaColumn(grid, evt) {
+    // `threshold` determines the size of the resize area.
+    // Clicking in this area triggers a resize.
+    var threshold = 5;
+    var nearest = detectNearestColumn(grid, evt);
+
+    dragStartX = evt.clientX;
+
+    // Detect if we clicked near the left or right border of a header cell
+    if(Math.abs(evt.clientX - nearest.columnLeft) <= threshold) {
+        // The user clicked near the left border.
+        // Resize the previous column, or else the first column.
+        return grid.getColumns()[Math.max(nearest.index - 1, 0)];
+    } else if(Math.abs(evt.clientX - nearest.columnRight) <= threshold) {
+        // The user clicked near the right border.
+        // Resize the current column.
+        return grid.getColumns()[nearest.index];
+    } else {
+        return null;
+    }
+}
 
 function init(self, divHeader) {
 
+    // Mouse event clientX where the drag starts.
+    // This is used in both resizing and reordering.
+    var dragStartX;
 
-    var widths = self.getColumns().map(function(col) {
-        return col.getWidth();
-    }),
-        resizeThresh = 5,
-        fuzzyBorders = genFuzzyBorders(widths, resizeThresh),
-        inserter = document.createElement('div'),
-        headerCanvas = self.getHeaderCanvas(),
-        headerRect = headerCanvas.getBoundingClientRect(),
-        dragHeader, mouseDown, x, y, startingTrans, resizing,
-        resizingCols, clickedCol, borderHit, reordering;
+    // These variables are used only during resizing.
+    var resizeColumn;
+    var resizeColumnInitialWidth;
 
+    // This variable is used only during reordering.
+    var reorderingColumn;
 
+    // `dragHeader` is a transparent copy of the header cell being dragged,
+    // during a reorder operation.
+    var dragHeader;
 
+    // This is used to restore the state of the cursor on document.body
+    // when a drag operation ends.
+    var bodyCursorBeforeDrag;
+
+    // `inserter` is a yellow bar between that appears between header cells
+    // when you are reordering cells.
+    // It shows you where your header cell is going to go.
+    var inserter = document.createElement('div');
     inserter.style.height = '20px';
     inserter.style.width = '5px';
     inserter.style.backgroundColor = 'goldenrod';
@@ -169,177 +125,204 @@ function init(self, divHeader) {
     inserter.style.display = 'none';
     inserter.top = 0;
     inserter.left = 0;
-
     document.body.appendChild(inserter);
 
+    // We start out in a non-dragging state.
+    // So let's add the non-dragging event listeners.
+    attachNonDraggingEventListeners();
 
-    document.addEventListener('mousemove', function(e) {
+    /*
+     * Helpers for adding/removing the non-dragging event listeners
+     */
 
-        var xMovement, yMovement, movementString,
-            left = headerRect.left,
-            rangeFunc, normalizedBorders,
-            inserterLeft, activeCol, activeColWidth,
-            colResizeIndex;
+    function attachNonDraggingEventListeners() {
+        // Update the cursor on mouse move.
+        divHeader.addEventListener('mousemove', onNonDraggingMouseMove);
 
-        widths = self.getColumns().map(function(col) {
-            return col.getWidth();
-        });
+        // Start a drag operation (resize or reorder) on mousedown.
+        divHeader.addEventListener('mousedown', onDragStart);
+    }
 
-        fuzzyBorders = genFuzzyBorders(widths, resizeThresh),
+    function removeNonDraggingEventListeners() {
+        // These event listeners are removed
+        // at the start of each drag operation (resize or reorder).
+        divHeader.removeEventListener('mousedown', onDragStart);
+        divHeader.removeEventListener('mousemove', onNonDraggingMouseMove);
+    }
 
-        rangeFunc = function(range) {
-            return inRange(range, e.x);
-        }
+    /*
+     * Event listeners in place when no dragging is happening
+     */
 
-        normalizedBorders = fuzzyBorders.map(function(item) {
-            return item.map(add.bind(null, left));
-        })
-
-        if (!resizing) {
-            borderHit = findIndex(normalizedBorders, rangeFunc);
-        }
-
-        if ( ( resizing || (borderHit !== -1)) && !reordering ) {
+    function onNonDraggingMouseMove(evt) {
+        // Update the cursor.
+        if(detectResizingAreaColumn(self, evt)) {
             divHeader.style.cursor = 'col-resize';
-            resizingCols = true;
-
-            if (mouseDown) {
-                if (borderHit > 0) {
-                    console.log('ree')
-                    colResizeIndex = clickedCol;
-                    activeCol = self.getColumns()[colResizeIndex];
-                    activeColWidth = activeCol.getWidth();
-                    activeCol.setWidth(Math.max(0, activeColWidth + (e.x - x)));
-                    self.paintAll();
-                    resizing = true;
-                    x = e.x;
-                }
-
-
-            }
-        } else if (mouseDown && dragHeader && (e.x >= headerRect.left) && (e.x <= (headerRect.left + headerRect.width)) && !resizingCols) {
-
-            reordering = true;
-
-            xMovement = startingTrans[0] - (x - e.x);
-            yMovement = 0;
-
-            movementString = ['translateX(',
-                xMovement,
-                'px) translateY(',
-                yMovement,
-                'px)'
-            ].join('');
-
-            dragHeader.style.transform = movementString;
-            dragHeader.style.zIndex = 10;
-
-            if (borderHit !== -1) {
-                inserterLeft = normalizedBorders[borderHit][0];
-                inserter.style.left = inserterLeft;
-                inserter.style.top = headerRect.top;
-                inserter.style.display = 'block';
-            } else {
-                inserter.style.display = 'none';
-            }
         } else {
-            divHeader.style.cursor = 'auto';
-            resizingCols = false;
+            divHeader.style.cursor = 'move';
         }
-    })
+    }
 
-    document.addEventListener('mouseup', function(evnt) {
-        var reordered;
+    function onDragStart(evt) {
 
-        x = y = 0;
+        // `threshold` is the area around the left and right border
+        // of each header cell.
+        // Clicking in this area triggers a resize.
+        var threshold = 5;
+        var nearest = detectNearestColumn(self, evt);
+        var resizingAreaColumn = detectResizingAreaColumn(self, evt);
 
-        if (dragHeader) {
-            dragHeader.parentNode.removeChild(dragHeader);
+        dragStartX = evt.clientX;
+
+        if(resizingAreaColumn) {
+            // The user clicked near a border.
+            // Start resizing.
+            startResize(resizingAreaColumn);
+        } else {
+            // The user didn't click near any border.
+            // Start reordering.
+            startReorder(nearest.column, nearest.columnLeft);
         }
+    }
 
-        dragHeader = null;
-        startingTrans = [0, 0];
-        mouseDown = false;
-        resizing = false;
-        reordering = false;
+    /*
+     * Resizing operation
+     */
 
-        if (borderHit !== -1) {
-            reordered = moveIdx(self.getColumns(), clickedCol, borderHit);
-            self.setColumns(reordered);
-            self.paintAll();
-        }
+    function startResize(nearestColumn) {
+        // Set up our state.
+        resizeColumn = nearestColumn;
+        resizeColumnInitialWidth = resizeColumn.getWidth();
 
-        inserter.style.display = 'none';
-        headerRect = headerCanvas.getBoundingClientRect();
-        fuzzyBorders = genFuzzyBorders(widths, resizeThresh);
-        widths = self.getColumns().map(function(col) {
-            return col.getWidth();
-        });
+        // Update the cursor style.
+        bodyCursorBeforeDrag = document.body.style.cursor;
+        document.body.style.cursor = 'col-resize';
 
-    })
+        // Set up event listeners.
+        removeNonDraggingEventListeners();
+        document.addEventListener('mousemove', onResizeDrag);
+        document.addEventListener('mouseup', onResizeDragEnd);
+    }
 
+    function onResizeDrag(evt) {
+        // Update the column width.
+        var changeInX = evt.clientX - dragStartX;
+        resizeColumn.setWidth(resizeColumnInitialWidth + changeInX);
+        self.paintAll();
+    }
 
-    divHeader.addEventListener('mousedown', function(evnt) {
-        mouseDown = true;
+    function onResizeDragEnd() {
+        // Clear our state.
+        dragStartX = null;
+        resizeColumn = null;
+        resizeColumnInitialWidth = null;
 
-        widths = self.getColumns().map(function(col) {
-            return col.getWidth();
-        });
+        // Restore the cursor style.
+        document.body.style.cursor = bodyCursorBeforeDrag;
 
-        clickedCol = contains(widths, evnt.offsetX);
+        // Restore the event listeners.
+        attachNonDraggingEventListeners();
+        document.removeEventListener('mousemove', onResizeDrag);
+        document.removeEventListener('mouseup', onResizeDragEnd);
+    }
 
-        x = evnt.x;
-        y = evnt.y;
+    /*
+     * Reordering operation
+     */
 
-
-        if (resizingCols) {
-            // always resize l to r 
-            clickedCol = contains(widths, evnt.offsetX - resizeThresh);
-            return; // gross....
-        }
-
-        var colOffset = partialSum(widths, clickedCol),
-            image = new Image(),
-            subCanvas = document.createElement('canvas'),
-            subCtx = subCanvas.getContext('2d'),
-            clickedColWidth = widths[clickedCol],
-            transform, ctx;
-
-        // body is prob not the best spot for this... 
-        document.body.appendChild(subCanvas);
-
-        headerRect = headerCanvas.getBoundingClientRect();
-        fuzzyBorders = genFuzzyBorders(widths, resizeThresh);
-
-        ctx = headerCanvas.getContext('2d');
-
-        subCanvas.width = clickedColWidth;
-        subCanvas.height = 20;
-        subCanvas.style.opacity = '.45';
-        subCanvas.style.position = 'absolute';
-        subCanvas.style.left = evnt.x - (evnt.offsetX - colOffset);
-        subCanvas.style.top = headerRect.top;
-        subCanvas.style.cursor = 'pointer';
-
-        subCtx.drawImage(
-            headerCanvas,
-            colOffset, // sx, 
+    function startReorder(nearestColumn, nearestColumnLeft) {
+        // Set up `dragHeader`.
+        var headerCanvas = self.getHeaderCanvas();
+        var headerRect = headerCanvas.getBoundingClientRect();
+        var nearestColumnWidth = nearestColumn.getWidth();
+        dragHeader = document.createElement('canvas');
+        dragHeader.width = nearestColumnWidth;
+        dragHeader.height = 20;
+        dragHeader.style.opacity = '.45';
+        dragHeader.style.position = 'absolute';
+        dragHeader.style.left = nearestColumnLeft + 'px';
+        dragHeader.style.top = headerRect.top;
+        dragHeader.style.zIndex = 10000;
+        dragHeader.getContext('2d').drawImage(
+            self.getHeaderCanvas(),
+            nearestColumnLeft - headerRect.left, // sx, 
             0, // sy, 
-            clickedColWidth, // sWidth, 
+            nearestColumnWidth, // sWidth, 
             20, // sHeight, 
             0, // dx, 
             0, // dy, 
-            clickedColWidth,
+            nearestColumnWidth,
             20);
+        document.body.appendChild(dragHeader);
 
+        // Set up our state.
+        reorderingColumn = nearestColumn;
 
-        dragHeader = subCanvas;
+        // Update the cursor style.
+        bodyCursorBeforeDrag = document.body.style.cursor;
+        document.body.style.cursor = 'move';
 
-        transform = dragHeader.style.transform;
+        // Set up event listeners.
+        removeNonDraggingEventListeners();
+        document.addEventListener('mousemove', onReorderDrag);
+        document.addEventListener('mouseup', onReorderDragEnd);
+    }
 
-        startingTrans = transform.match(/([^(]?\d+)/g) || [0, 0];
-    });
+    function onReorderDrag(evt) {
+        // Find xOfNearestBorder.
+        var nearest = detectNearestColumn(self, evt);
+        var columnLeft = nearest.columnLeft;
+        var columnRight = nearest.columnRight;
+        var isLeftOfCenter = evt.clientX < (columnLeft + columnRight) * 0.5;
+        var xOfNearestBorder = isLeftOfCenter ? columnLeft : columnRight;
 
+        // Update `inserter`.
+        var headerCanvas = self.getHeaderCanvas();
+        var headerRect = headerCanvas.getBoundingClientRect();
+        inserter.style.top = headerRect.top;
+        // Subtract 2 pixels to make `inserter` appear ON the border.
+        inserter.style.left = (xOfNearestBorder - 2) + 'px';
+        inserter.style.display = 'block';
+
+        // Update `dragHeader`.
+        var changeInX = evt.clientX - dragStartX;
+        var transform = 'translateX(' + changeInX + 'px) translateY(0px)';
+        dragHeader.style.transform = transform;
+    }
+
+    function onReorderDragEnd(evt) {
+        // Find the nearestBorderIndex.
+        var nearest = detectNearestColumn(self, evt);
+        var columnLeft = nearest.columnLeft;
+        var columnRight = nearest.columnRight;
+        var nearestBorderIndex = evt.clientX < (columnLeft + columnRight) * 0.5
+            ? nearest.index
+            : nearest.index + 1;
+
+        // Move the column in the grid.
+        var columns = self.getColumns();
+        var from = columns.indexOf(reorderingColumn);
+        var to = nearestBorderIndex;
+        var reordered = moveIdx(columns, from, to);
+        self.setColumns(reordered);
+        self.paintAll();
+
+        // Clear our state.
+        dragStartX = null;
+        reorderingColumn = null;
+
+        // Restore the cursor style.
+        document.body.style.cursor = bodyCursorBeforeDrag;
+
+        // Remove our divs.
+        dragHeader.parentNode.removeChild(dragHeader);
+        inserter.style.display = 'none';
+
+        // Restore the event listeners.
+        attachNonDraggingEventListeners();
+        document.removeEventListener('mousemove', onReorderDrag);
+        document.removeEventListener('mouseup', onReorderDragEnd);
+    }
 }
 
 exports.init = init;
