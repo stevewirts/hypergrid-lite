@@ -123,6 +123,7 @@ function init(self, divHeader) {
     inserter.style.backgroundColor = 'goldenrod';
     inserter.style.position = 'absolute';
     inserter.style.display = 'none';
+    inserter.style.zIndex = 10000;
     document.body.appendChild(inserter);
 
     // We start out in a non-dragging state.
@@ -239,7 +240,7 @@ function init(self, divHeader) {
         dragHeader.style.opacity = '.45';
         dragHeader.style.position = 'absolute';
         dragHeader.style.left = nearestColumnLeft + 'px';
-        dragHeader.style.top = headerRect.top;
+        dragHeader.style.top = headerRect.top + 'px';
         dragHeader.style.zIndex = 10000;
         dragHeader.getContext('2d').drawImage(
             self.getHeaderCanvas(),
@@ -277,9 +278,9 @@ function init(self, divHeader) {
         // Update `inserter`.
         var headerCanvas = self.getHeaderCanvas();
         var headerRect = headerCanvas.getBoundingClientRect();
-        inserter.style.top = headerRect.top;
         // Subtract 2 pixels to make `inserter` appear ON the border.
         inserter.style.left = (xOfNearestBorder - 2) + 'px';
+        inserter.style.top = headerRect.top + 'px';
         inserter.style.display = 'block';
 
         // Update `dragHeader`.
