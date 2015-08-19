@@ -228,6 +228,8 @@ function init(self, divHeader) {
 
         // Prevent user-select.
         evt.preventDefault();
+
+        self.trigger('columnsresized');
     }
 
     /*
@@ -340,6 +342,8 @@ function init(self, divHeader) {
         attachNonDraggingEventListeners();
         document.removeEventListener('mousemove', onReorderDrag);
         document.removeEventListener('mouseup', onReorderDragEnd);
+
+        self.trigger('columnsreordered');
     }
 }
 
