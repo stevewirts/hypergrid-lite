@@ -103,8 +103,9 @@ function init(self, divHeader) {
     var resizeColumn;
     var resizeColumnInitialWidth;
 
-    // This variable is used only during reordering.
+    // These variables are used only during reordering.
     var reorderingColumn;
+    var reorderingColumnLeftStart;
 
     // `dragHeader` is a transparent copy of the header cell being dragged,
     // during a reorder operation.
@@ -259,6 +260,7 @@ function init(self, divHeader) {
 
         // Set up our state.
         reorderingColumn = nearestColumn;
+        reorderingColumnLeftStart = nearestColumnLeft;
 
         // Update the cursor style.
         bodyCursorBeforeDrag = document.body.style.cursor;
@@ -288,6 +290,15 @@ function init(self, divHeader) {
 
         // Update `dragHeader`.
         var changeInX = evt.clientX - dragStartX;
+        // Disallow dragging past the left of the header.
+        var minimum = headerRect.left - reorderingColumnLeftStart;
+        changeInX = Math.max(minimum, changeInX);
+        // Disallow dragging past the right of the header.
+        var headerRight = headerRect.left + headerRect.width
+        var maximum = headerRight
+            - reorderingColumn.getWidth()
+            - reorderingColumnLeftStart;
+        changeInX = Math.min(maximum, changeInX);
         var transform = 'translateX(' + changeInX + 'px) translateY(0px)';
         dragHeader.style.transform = transform;
 
@@ -315,6 +326,7 @@ function init(self, divHeader) {
         // Clear our state.
         dragStartX = null;
         reorderingColumn = null;
+        reorderingColumnLeftStart = null;
 
         // Restore the cursor style.
         document.body.style.cursor = bodyCursorBeforeDrag;
