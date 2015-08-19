@@ -207,7 +207,8 @@ function init(self, divHeader) {
     function onResizeDrag(evt) {
         // Update the column width.
         var changeInX = evt.clientX - dragStartX;
-        resizeColumn.setWidth(resizeColumnInitialWidth + changeInX);
+        var newWidth = Math.max(10, resizeColumnInitialWidth + changeInX);
+        resizeColumn.setWidth(newWidth);
         self.paintAll();
     }
 
