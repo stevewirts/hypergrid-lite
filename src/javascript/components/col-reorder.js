@@ -69,7 +69,7 @@ function detectNearestColumn(grid, evt) {
  * detect if a mouse event is in a column's resize area
  * @param  {Grid}   grid the hypergrid-lite object
  * @param  {Event}  evt  the mouse event to look near
- * @return {object}      the column whose resize area the mouse is in, or null
+ * @return {Column}      the column whose resize area the mouse is in, or null
  */
 function detectResizingAreaColumn(grid, evt) {
     // `threshold` determines the size of the resize area.
