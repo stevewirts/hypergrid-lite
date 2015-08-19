@@ -210,7 +210,7 @@ function init(self, divHeader) {
         self.paintAll();
     }
 
-    function onResizeDragEnd() {
+    function onResizeDragEnd(evt) {
         // Clear our state.
         dragStartX = null;
         resizeColumn = null;
@@ -223,6 +223,9 @@ function init(self, divHeader) {
         attachNonDraggingEventListeners();
         document.removeEventListener('mousemove', onResizeDrag);
         document.removeEventListener('mouseup', onResizeDragEnd);
+
+        // Prevent user-select.
+        evt.preventDefault();
     }
 
     /*
@@ -287,6 +290,9 @@ function init(self, divHeader) {
         var changeInX = evt.clientX - dragStartX;
         var transform = 'translateX(' + changeInX + 'px) translateY(0px)';
         dragHeader.style.transform = transform;
+
+        // Prevent user-select.
+        evt.preventDefault();
     }
 
     function onReorderDragEnd(evt) {
