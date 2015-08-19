@@ -123,8 +123,6 @@ function init(self, divHeader) {
     inserter.style.backgroundColor = 'goldenrod';
     inserter.style.position = 'absolute';
     inserter.style.display = 'none';
-    inserter.top = 0;
-    inserter.left = 0;
     document.body.appendChild(inserter);
 
     // We start out in a non-dragging state.
