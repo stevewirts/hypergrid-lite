@@ -17,8 +17,8 @@ var paint = function(gc, config) {
 
     var cellPadding = config.cellPadding || 0;
     var halignOffset = 0;
-    var textWidth = config.getTextWidth(gc, value);
-    var fontMetrics = config.getTextHeight(font);
+    var textWidth;
+    var fontMetrics;
 
     if (gc.font !== config.font) {
         gc.font = config.font;
@@ -29,6 +29,9 @@ var paint = function(gc, config) {
     if (gc.textBaseline !== 'middle') {
         gc.textBaseline = 'middle';
     }
+
+    textWidth = config.getTextWidth(gc, value);
+    fontMetrics = config.getTextHeight(font);
 
     if (halign === 'right') {
         //textWidth = config.getTextWidth(gc, config.value);
