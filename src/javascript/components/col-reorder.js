@@ -69,7 +69,7 @@ function detectNearestColumn(grid, evt) {
  * detect if a mouse event is in a column's resize area
  * @param  {Grid}   grid the hypergrid-lite object
  * @param  {Event}  evt  the mouse event to look near
- * @return {object}      the column whose resize area the mouse is in, or null
+ * @return {Column}      the column whose resize area the mouse is in, or null
  */
 function detectResizingAreaColumn(grid, evt) {
     // `threshold` determines the size of the resize area.
@@ -103,8 +103,9 @@ function init(self, divHeader) {
     var resizeColumn;
     var resizeColumnInitialWidth;
 
-    // This variable is used only during reordering.
+    // These variables are used only during reordering.
     var reorderingColumn;
+    var reorderingColumnLeftStart;
 
     // `dragHeader` is a transparent copy of the header cell being dragged,
     // during a reorder operation.
@@ -123,8 +124,7 @@ function init(self, divHeader) {
     inserter.style.backgroundColor = 'goldenrod';
     inserter.style.position = 'absolute';
     inserter.style.display = 'none';
-    inserter.top = 0;
-    inserter.left = 0;
+    inserter.style.zIndex = 10000;
     document.body.appendChild(inserter);
 
     // We start out in a non-dragging state.
@@ -207,11 +207,12 @@ function init(self, divHeader) {
     function onResizeDrag(evt) {
         // Update the column width.
         var changeInX = evt.clientX - dragStartX;
-        resizeColumn.setWidth(resizeColumnInitialWidth + changeInX);
+        var newWidth = Math.max(10, resizeColumnInitialWidth + changeInX);
+        resizeColumn.setWidth(newWidth);
         self.paintAll();
     }
 
-    function onResizeDragEnd() {
+    function onResizeDragEnd(evt) {
         // Clear our state.
         dragStartX = null;
         resizeColumn = null;
@@ -224,6 +225,11 @@ function init(self, divHeader) {
         attachNonDraggingEventListeners();
         document.removeEventListener('mousemove', onResizeDrag);
         document.removeEventListener('mouseup', onResizeDragEnd);
+
+        // Prevent user-select.
+        evt.preventDefault();
+
+        self.trigger('columnsresized');
     }
 
     /*
@@ -241,7 +247,7 @@ function init(self, divHeader) {
         dragHeader.style.opacity = '.45';
         dragHeader.style.position = 'absolute';
         dragHeader.style.left = nearestColumnLeft + 'px';
-        dragHeader.style.top = headerRect.top;
+        dragHeader.style.top = headerRect.top + 'px';
         dragHeader.style.zIndex = 10000;
         dragHeader.getContext('2d').drawImage(
             self.getHeaderCanvas(),
@@ -257,6 +263,7 @@ function init(self, divHeader) {
 
         // Set up our state.
         reorderingColumn = nearestColumn;
+        reorderingColumnLeftStart = nearestColumnLeft;
 
         // Update the cursor style.
         bodyCursorBeforeDrag = document.body.style.cursor;
@@ -279,15 +286,27 @@ function init(self, divHeader) {
         // Update `inserter`.
         var headerCanvas = self.getHeaderCanvas();
         var headerRect = headerCanvas.getBoundingClientRect();
-        inserter.style.top = headerRect.top;
         // Subtract 2 pixels to make `inserter` appear ON the border.
         inserter.style.left = (xOfNearestBorder - 2) + 'px';
+        inserter.style.top = headerRect.top + 'px';
         inserter.style.display = 'block';
 
         // Update `dragHeader`.
         var changeInX = evt.clientX - dragStartX;
+        // Disallow dragging past the left of the header.
+        var minimum = headerRect.left - reorderingColumnLeftStart;
+        changeInX = Math.max(minimum, changeInX);
+        // Disallow dragging past the right of the header.
+        var headerRight = headerRect.left + headerRect.width
+        var maximum = headerRight
+            - reorderingColumn.getWidth()
+            - reorderingColumnLeftStart;
+        changeInX = Math.min(maximum, changeInX);
         var transform = 'translateX(' + changeInX + 'px) translateY(0px)';
         dragHeader.style.transform = transform;
+
+        // Prevent user-select.
+        evt.preventDefault();
     }
 
     function onReorderDragEnd(evt) {
@@ -310,6 +329,7 @@ function init(self, divHeader) {
         // Clear our state.
         dragStartX = null;
         reorderingColumn = null;
+        reorderingColumnLeftStart = null;
 
         // Restore the cursor style.
         document.body.style.cursor = bodyCursorBeforeDrag;
@@ -322,6 +342,8 @@ function init(self, divHeader) {
         attachNonDraggingEventListeners();
         document.removeEventListener('mousemove', onReorderDrag);
         document.removeEventListener('mouseup', onReorderDragEnd);
+
+        self.trigger('columnsreordered');
     }
 }
 

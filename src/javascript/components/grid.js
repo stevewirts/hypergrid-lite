@@ -399,6 +399,25 @@ Grid.prototype.addColumn = function(field, label, type, width, renderer) {
     columns.push(newCol);
 };
 
+Grid.prototype.addEventListener = function() {
+    var canvas = this.getCanvas();
+    return canvas.addEventListener.apply(canvas, arguments);
+};
+
+Grid.prototype.removeEventListener = function() {
+    var canvas = this.getCanvas();
+    return canvas.removeEventListener.apply(canvas, arguments);
+};
+
+Grid.prototype.trigger = function(eventType) {
+    var canvas = this.getCanvas();
+    if(document.createEvent) {
+        canvas.dispatchEvent(new Event(eventType));
+    } else if(canvas.fireEvent) {
+        canvas.fireEvent('on' + eventType, document.createEventObject());
+    }
+};
+
 Grid.prototype.paintAll = function() {
     var config = this.getPaintConfig();
     var numCols = this.getColumnCount();
