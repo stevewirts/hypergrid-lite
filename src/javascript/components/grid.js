@@ -411,11 +411,9 @@ Grid.prototype.removeEventListener = function() {
 
 Grid.prototype.trigger = function(eventType) {
     var canvas = this.getCanvas();
-    if(document.createEvent) {
-        canvas.dispatchEvent(new Event(eventType));
-    } else if(canvas.fireEvent) {
-        canvas.fireEvent('on' + eventType, document.createEventObject());
-    }
+    var evt = document.createEvent('HTMLEvents');
+    evt.initEvent(eventType, true, true);
+    canvas.dispatchEvent(evt);
 };
 
 Grid.prototype.paintAll = function() {
