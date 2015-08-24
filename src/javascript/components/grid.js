@@ -492,6 +492,6 @@ Grid.prototype.getDefaultCellRenderer = function() {
     return defaultcellrenderer;
 }
 
-module.exports = function(domElement, model) {
-    return new Grid(domElement, model);
+module.exports = function(domElement, model, options) {
+    return new Grid(domElement, model, options);
 };
