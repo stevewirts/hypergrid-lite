@@ -437,7 +437,7 @@ Grid.prototype.paintMainArea = function(config, numCols, numRows) {
 
     } catch (e) {
         context.restore();
-        console.log(e);
+        console.error(e);
     }
 };
 
@@ -455,7 +455,7 @@ Grid.prototype.paintHeaders = function(config, numCols, numRows) {
 
     } catch (e) {
         context.restore();
-        console.log(e);
+        console.error(e);
     }
 };
 
