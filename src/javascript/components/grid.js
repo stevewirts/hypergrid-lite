@@ -258,7 +258,7 @@ Grid.prototype.checkCanvasBounds = function() {
     var container = this.getContainer();
     var headerHeight = this.getFixedRowHeight();
     var computedWidth = this.computeMainAreaFullWidth();
-    var computedHeight = this.computeMainAreaFullHeight() - headerHeight;
+    var computedHeight = this.computeMainAreaFullHeight();
 
     if (this.width === computedWidth && this.height === computedHeight) {
         return;
