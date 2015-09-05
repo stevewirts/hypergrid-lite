@@ -278,6 +278,8 @@ Grid.prototype.checkCanvasBounds = function() {
     this.width = computedWidth;
     this.height = computedHeight;
 
+    this.trigger('boundschanged');
+
     this.paintAll();
 };
 
