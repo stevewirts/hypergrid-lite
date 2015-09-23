@@ -257,7 +257,7 @@ Grid.prototype.checkCanvasBounds = function() {
     var computedHeight = this.computeMainAreaFullHeight();
 
     if (this.width === computedWidth && this.height === computedHeight) {
-        return;
+        return false;
     }
 
     this.viewport = container.getBoundingClientRect();
@@ -281,6 +281,8 @@ Grid.prototype.checkCanvasBounds = function() {
     this.trigger('boundschanged');
 
     this.paintAll();
+
+    return true;
 };
 
 
