@@ -219,7 +219,6 @@ Grid.prototype.addProperties = function(properties) {
 
 Grid.prototype.initialize = function() {
     var self = this;
-    var fixedRowHeight = this.getFixedRowHeight();
     var container = this.getContainer();
     var divHeader = document.createElement('div');
     divHeader.style.position = 'absolute';
@@ -235,7 +234,6 @@ Grid.prototype.initialize = function() {
 
     var divMain = document.createElement('div');
     divMain.style.position = 'absolute';
-    divMain.style.top = fixedRowHeight + 'px';
     divMain.style.right = 0;
     divMain.style.bottom = 0;
     divMain.style.left = 0;
@@ -244,8 +242,6 @@ Grid.prototype.initialize = function() {
     divMain.addEventListener("scroll", function(e) {
         divHeader.scrollLeft = e.target.scrollLeft;
     });
-
-
 
     divMain.appendChild(this.getCanvas());
     container.appendChild(divMain);
@@ -258,10 +254,10 @@ Grid.prototype.checkCanvasBounds = function() {
     var container = this.getContainer();
     var headerHeight = this.getFixedRowHeight();
     var computedWidth = this.computeMainAreaFullWidth();
-    var computedHeight = this.computeMainAreaFullHeight() - headerHeight;
+    var computedHeight = this.computeMainAreaFullHeight();
 
     if (this.width === computedWidth && this.height === computedHeight) {
-        return;
+        return false;
     }
 
     this.viewport = container.getBoundingClientRect();
@@ -273,6 +269,7 @@ Grid.prototype.checkCanvasBounds = function() {
     headerCanvas.setAttribute('width', computedWidth);
     headerCanvas.setAttribute('height', headerHeight);
 
+    canvas.parentElement.style.top = headerHeight + 'px';
     canvas.style.position = 'relative';
     canvas.style.top = '1px';
     canvas.setAttribute('width', computedWidth);
@@ -281,7 +278,11 @@ Grid.prototype.checkCanvasBounds = function() {
     this.width = computedWidth;
     this.height = computedHeight;
 
+    this.trigger('boundschanged');
+
     this.paintAll();
+
+    return true;
 };
 
 
