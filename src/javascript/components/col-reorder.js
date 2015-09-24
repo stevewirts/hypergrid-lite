@@ -209,7 +209,9 @@ function init(self, divHeader) {
         var changeInX = evt.clientX - dragStartX;
         var newWidth = Math.max(10, resizeColumnInitialWidth + changeInX);
         resizeColumn.setWidth(newWidth);
-        self.paintAll();
+        if(!self.checkCanvasBounds()) {
+            self.paintAll();
+        }
     }
 
     function onResizeDragEnd(evt) {

@@ -219,7 +219,6 @@ Grid.prototype.addProperties = function(properties) {
 
 Grid.prototype.initialize = function() {
     var self = this;
-    var fixedRowHeight = this.getFixedRowHeight();
     var container = this.getContainer();
     var divHeader = document.createElement('div');
     divHeader.style.position = 'absolute';
@@ -255,10 +254,10 @@ Grid.prototype.checkCanvasBounds = function() {
     var container = this.getContainer();
     var headerHeight = this.getFixedRowHeight();
     var computedWidth = this.computeMainAreaFullWidth();
-    var computedHeight = this.computeMainAreaFullHeight() - headerHeight;
+    var computedHeight = this.computeMainAreaFullHeight();
 
     if (this.width === computedWidth && this.height === computedHeight) {
-        return;
+        return false;
     }
 
     this.viewport = container.getBoundingClientRect();
@@ -279,7 +278,11 @@ Grid.prototype.checkCanvasBounds = function() {
     this.width = computedWidth;
     this.height = computedHeight;
 
+    this.trigger('boundschanged');
+
     this.paintAll();
+
+    return true;
 };
 
 
