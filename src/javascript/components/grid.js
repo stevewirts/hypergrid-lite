@@ -7,7 +7,9 @@ var defaultcellrenderer = require('./defaultcellrenderer.js');
 var resizables = [];
 var resizeLoopRunning = true;
 var fontData = {};
-var textWidthCache = new LRUCache({ max: 10000 });
+var textWidthCache = new LRUCache({
+    max: 10000
+});
 
 
 var resizablesLoopFunction = function(now) {
@@ -72,7 +74,7 @@ function Grid(domElement, model, properties) {
         return columns;
     }
 
-    this.setColumns = function (cols) {
+    this.setColumns = function(cols) {
         columns = cols;
     }
 
@@ -256,7 +258,7 @@ Grid.prototype.initialize = function() {
 
     divMain.appendChild(this.getCanvas());
     container.appendChild(divMain);
-    
+
 
     this.checkCanvasBounds();
     this.beginResizing();
@@ -266,9 +268,9 @@ Grid.prototype.initialize = function() {
 Grid.prototype.initScrollbars = function() {
 
     var self = this;
-    
+
     this.scrollbarsDiv = this.getScrollbarDiv();
-    
+
     var horzBar = new FinBar({
         orientation: 'horizontal',
         onchange: function(idx) {
@@ -344,7 +346,7 @@ Grid.prototype.setHScrollbarValues = function(max) {
 
 Grid.prototype.getScrollbarDiv = function() {
     var outer = document.createElement('div');
-    var strVar="";
+    var strVar = "";
     strVar += "<div style=\"top:0px;right:0px;bottom:0px;left:0px;position:absolute\">";
     strVar += "  <style>";
     strVar += "  div.finbar-horizontal,";
@@ -369,7 +371,7 @@ Grid.prototype.getScrollbarDiv = function() {
 Grid.prototype.checkCanvasBounds = function() {
     var container = this.getContainer();
     var headerHeight = this.getFixedRowHeight();
-    
+
     var viewport = container.getBoundingClientRect();
 
     var headerCanvas = this.getHeaderCanvas();
@@ -386,7 +388,7 @@ Grid.prototype.checkCanvasBounds = function() {
 
     this.width = viewport.width;
     this.height = viewport.height;
-    
+
     //the model may have changed, lets
     //recompute the scrolling coordinates
     this.finalPageLocation = undefined;
@@ -518,8 +520,8 @@ Grid.prototype.paintAll = function() {
     var config = this.getPaintConfig();
     var numCols = this.getColumnCount();
     var numRows = this.getRowCount();
-	this.paintMainArea(config, numCols, numRows);
-	this.paintHeaders(config, numCols, 1);
+    this.paintMainArea(config, numCols, numRows);
+    this.paintHeaders(config, numCols, 1);
 }
 
 Grid.prototype.paintMainArea = function(config, numCols, numRows) {
@@ -534,10 +536,12 @@ Grid.prototype.paintMainArea = function(config, numCols, numRows) {
         var totalWidth = 0;
         var dx, dy = 0;
         context.save();
-        for (var x = 0; (x + scrollX) <= numCols && totalWidth < bounds.width; x++) {
+        for (var x = 0;
+            (x + scrollX) <= numCols && totalWidth < bounds.width; x++) {
             var rowHeight = 0;
             totalHeight = 0;
-            for (var y = 0; (y + scrollY) < numRows && totalHeight < bounds.height; y++) {
+            for (var y = 0;
+                (y + scrollY) < numRows && totalHeight < bounds.height; y++) {
                 var dx = x + scrollX;
                 var dy = y + scrollY;
                 this.paintCell(context, dx, dy, config);
@@ -557,8 +561,8 @@ Grid.prototype.paintMainArea = function(config, numCols, numRows) {
 
 Grid.prototype.paintHeaders = function(config, numCols, numRows) {
     try {
-    	config.halign = 'center';
-    	config.cellPadding = '0px';
+        config.halign = 'center';
+        config.cellPadding = '0px';
         var self = this;
         var context = this.getHeaderContext();
         context.save();
@@ -613,7 +617,7 @@ Grid.prototype.getDefaultFinalPageLocation = function() {
     var numCols = this.getColumnCount();
     var rowHeight = this.getRowHeight(0);
     var totalWidth = 0;
-    var numRows = Math.floor(mySize.height/rowHeight);
+    var numRows = Math.floor(mySize.height / rowHeight);
     var i;
     for (i = 0; i < numCols; i++) {
         var c = numCols - i - 1;
@@ -624,8 +628,11 @@ Grid.prototype.getDefaultFinalPageLocation = function() {
         }
     }
     var maxX = numCols - i;
-    var maxY = this.getRowCount() - numRows; 
-    return {x: maxX, y: maxY}
+    var maxY = this.getRowCount() - numRows;
+    return {
+        x: maxX,
+        y: maxY
+    }
 };
 
 Grid.prototype.getDefaultCellRenderer = function() {
@@ -635,4 +642,3 @@ Grid.prototype.getDefaultCellRenderer = function() {
 module.exports = function(domElement, model) {
     return new Grid(domElement, model);
 };
-

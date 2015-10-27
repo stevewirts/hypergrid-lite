@@ -199,7 +199,7 @@ function init(self, divHeader) {
             borderHit = findIndex(normalizedBorders, rangeFunc);
         }
 
-        if ( ( resizing || (borderHit !== -1)) && !reordering ) {
+        if ((resizing || (borderHit !== -1)) && !reordering) {
             divHeader.style.cursor = 'col-resize';
             resizingCols = true;
 
