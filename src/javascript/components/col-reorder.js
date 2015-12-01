@@ -201,6 +201,7 @@ function init(self, divHeader) {
 
         if ( ( resizing || (borderHit !== -1)) && !reordering ) {
             divHeader.style.cursor = 'col-resize';
+            console.log('col-resize');
             resizingCols = true;
 
             if (mouseDown) {
