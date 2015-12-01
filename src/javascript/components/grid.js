@@ -342,9 +342,10 @@ Grid.prototype.setHScrollbarValues = function(max) {
 };
 
 Grid.prototype.getScrollbarDiv = function() {
+    var fixedRowHeight = this.getFixedRowHeight();
     var outer = document.createElement('div');
     var strVar="";
-    strVar += "<div style=\"top:0px;right:0px;bottom:0px;left:0px;position:absolute\">";
+    strVar += "<div style=\"top:" + fixedRowHeight + "px;right:0px;bottom:0px;left:0px;position:absolute\">";
     strVar += "  <style>";
     strVar += "  div.finbar-horizontal,";
     strVar += "  div.finbar-vertical {";
@@ -558,7 +559,7 @@ Grid.prototype.paintMainArea = function(config, numCols, numRows) {
         var totalWidth = 0;
         var dx, dy = 0;
         context.save();
-        for (var x = 0; (x + scrollX) <= numCols && totalWidth < bounds.width; x++) {
+        for (var x = 0; (x + scrollX) < numCols && totalWidth < bounds.width; x++) {
             var rowHeight = 0;
             totalHeight = 0;
             for (var y = 0; (y + scrollY) < numRows && totalHeight < bounds.height; y++) {
