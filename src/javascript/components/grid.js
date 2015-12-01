@@ -35,6 +35,7 @@ function Grid(domElement, model, properties) {
     var columns = [];
     this.scrollX = 0;
     this.scrollY = 0;
+    this.boundsInitialized = false;
 
     model.changed = function(x, y) {
         self.paint(x, y);
@@ -367,6 +368,7 @@ Grid.prototype.getScrollbarDiv = function() {
 };
 
 Grid.prototype.checkCanvasBounds = function() {
+    var self = this;
     var container = this.getContainer();
     var headerHeight = this.getFixedRowHeight();
 
@@ -374,6 +376,13 @@ Grid.prototype.checkCanvasBounds = function() {
 
     var headerCanvas = this.getHeaderCanvas();
     var canvas = this.getCanvas();
+
+    if (this.boundsInitialized && canvas.getAttribute('width') === ('' + viewport.width)
+        && canvas.getAttribute('height') === ('' + (viewport.height - headerHeight))) {
+            return;
+    }
+
+    this.boundsInitialized = true;
 
     headerCanvas.style.position = 'relative';
     headerCanvas.setAttribute('width', viewport.width);
