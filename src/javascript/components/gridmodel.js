@@ -24,6 +24,10 @@ GridModel.prototype.getValue = function(field, y) {
     return value;
 };
 
+GridModel.prototype.getRow = function(y) {
+    return this.getData()[y];
+};
+
 GridModel.prototype.getRowCount = function() {
     return this.getData().length;
 };

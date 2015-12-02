@@ -251,8 +251,10 @@ Grid.prototype.initialize = function() {
     // });
     divMain.style.overflow = 'hidden';
 
-    this.initScrollbars();
-    container.appendChild(this.scrollbarsDiv);
+    if (this.resolveProperty('scrollingEnabled') === true) {
+        this.initScrollbars();
+        container.appendChild(this.scrollbarsDiv);
+    }
 
     divMain.appendChild(this.getCanvas());
     container.appendChild(divMain);
@@ -272,7 +274,9 @@ Grid.prototype.initScrollbars = function() {
     var horzBar = new FinBar({
         orientation: 'horizontal',
         onchange: function(idx) {
-            self.setScrollX(idx);
+            if (!self.ignoreScrollEvents) {
+                self.setScrollX(idx);
+            }
         },
         cssStylesheetReferenceElement: document.body,
         container: this.getContainer(),
@@ -281,7 +285,9 @@ Grid.prototype.initScrollbars = function() {
     var vertBar = new FinBar({
         orientation: 'vertical',
         onchange: function(idx) {
-            self.setScrollY(idx);
+            if (!self.ignoreScrollEvents) {
+                self.setScrollY(idx);
+            }
         },
         paging: {
             up: function() {
@@ -315,11 +321,13 @@ Grid.prototype.pageUp = function() {
 
 Grid.prototype.setScrollX = function(value) {
     this.scrollX = value;
+    this.trigger('renderedrowrangechanged');
     this.paintAll();
 };
 
 Grid.prototype.setScrollY = function(value) {
     this.scrollY = value;
+    this.trigger('renderedrowrangechanged');
     this.paintAll();
 };
 
@@ -368,7 +376,6 @@ Grid.prototype.getScrollbarDiv = function() {
 };
 
 Grid.prototype.checkCanvasBounds = function() {
-    var self = this;
     var container = this.getContainer();
     var headerHeight = this.getFixedRowHeight();
 
@@ -377,42 +384,53 @@ Grid.prototype.checkCanvasBounds = function() {
     var headerCanvas = this.getHeaderCanvas();
     var canvas = this.getCanvas();
 
-    if (this.boundsInitialized && canvas.getAttribute('width') === ('' + viewport.width)
-        && canvas.getAttribute('height') === ('' + (viewport.height - headerHeight))) {
-            return;
+    if (!this.boundsInitialized || canvas.getAttribute('width') !== ('' + viewport.width)
+        || canvas.getAttribute('height') !== ('' + (viewport.height - headerHeight))) {
+
+        headerCanvas.style.position = 'relative';
+        headerCanvas.setAttribute('width', viewport.width);
+        headerCanvas.setAttribute('height', headerHeight);
+
+        canvas.parentElement.style.top = headerHeight + 'px';
+        canvas.style.position = 'relative';
+        canvas.style.top = '1px';
+
+        canvas.setAttribute('width', viewport.width);
+        canvas.setAttribute('height', viewport.height - headerHeight);
     }
 
     this.boundsInitialized = true;
 
-    headerCanvas.style.position = 'relative';
-    headerCanvas.setAttribute('width', viewport.width);
-    headerCanvas.setAttribute('height', headerHeight);
-
-    canvas.parentElement.style.top = headerHeight + 'px';
-    canvas.style.position = 'relative';
-    canvas.style.top = '1px';
-
-    canvas.setAttribute('width', viewport.width);
-    canvas.setAttribute('height', viewport.height - headerHeight);
-
-    if (this.width !== viewport.width || this.height !== viewport.height){
-        this.width = viewport.width;
-        this.height = viewport.height;
-        this.trigger('boundschanged');
-    }
-    
-    //the model may have changed, lets
-    //recompute the scrolling coordinates
-    this.finalPageLocation = undefined;
-    var finalPageLocation = this.getFinalPageLocation();
-    this.setHScrollbarValues(finalPageLocation.x);
-    this.setVScrollbarValues(finalPageLocation.y);
-
-    this.resizeScrollbars();
+    this.checkScrollbars();
 
     this.paintAll();
 
     return true;
+};
+
+Grid.prototype.updateRowCount = function() {
+    this.checkScrollbars();
+};
+
+Grid.prototype.checkScrollbars = function() {
+    if (this.resolveProperty('scrollingEnabled') === true) {
+        this.ignoreScrollEvents = true;
+        //the model may have changed, lets
+        //recompute the scrolling coordinates
+        var oldScrollX = this.scrollX,
+            oldScrollY = this.scrollY;
+
+        this.finalPageLocation = undefined;
+        var finalPageLocation = this.getFinalPageLocation();
+        this.setHScrollbarValues(finalPageLocation.x);
+        this.setVScrollbarValues(finalPageLocation.y);
+
+        this.resizeScrollbars();
+
+        this.setScrollX(oldScrollX);
+        this.setScrollY(oldScrollY);
+        this.ignoreScrollEvents = false;
+    }
 };
 
 Grid.prototype.computeMainAreaFullHeight = function() {
@@ -658,8 +676,18 @@ Grid.prototype.getDefaultFinalPageLocation = function() {
         }
     }
     var maxX = numCols - i;
-    var maxY = this.getRowCount() - numRows; 
+    var maxY = Math.max(maxX, this.getRowCount() - numRows);
     return {x: maxX, y: maxY}
+};
+
+Grid.prototype.getRenderedRowRange = function() {
+    var mySize = this.getCanvas().getBoundingClientRect();
+    var rowHeight = this.getRowHeight(0);
+    var numRows = Math.ceil(mySize.height/rowHeight);
+    return {
+        top: this.scrollY,
+        bottom: this.scrollY + numRows - 1
+    };
 };
 
 Grid.prototype.getDefaultCellRenderer = function() {

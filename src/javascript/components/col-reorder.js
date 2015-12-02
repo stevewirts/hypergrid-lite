@@ -225,9 +225,9 @@ function init(self, divHeader) {
         var changeInX = evt.pageX - dragStartX;
         var newWidth = Math.max(10, resizeColumnInitialWidth + changeInX);
         resizeColumn.setWidth(newWidth);
-        if(!self.checkCanvasBounds()) {
-            self.paintAll();
-        }
+
+        self.trigger('columnsresizing');
+        self.paintAll();
     }
 
     function onResizeDragEnd(evt) {
@@ -247,6 +247,7 @@ function init(self, divHeader) {
         // Prevent user-select.
         evt.preventDefault();
 
+        self.checkScrollbars();
         self.trigger('columnsresized');
     }
 
