@@ -221,6 +221,7 @@ Grid.prototype.merge = function(properties1, properties2) {
 
 Grid.prototype.addProperties = function(properties) {
     this.merge(this.getOptions(), properties);
+    this.boundsInitialized = false;
 };
 
 Grid.prototype.initialize = function() {
@@ -320,15 +321,19 @@ Grid.prototype.pageUp = function() {
 };
 
 Grid.prototype.setScrollX = function(value) {
-    this.scrollX = value;
-    this.trigger('renderedrowrangechanged');
-    this.paintAll();
+    if (this.scrollX !== value) {
+        this.scrollX = value;
+        this.trigger('renderedrowrangechanged');
+        this.paintAll();
+    }
 };
 
 Grid.prototype.setScrollY = function(value) {
-    this.scrollY = value;
-    this.trigger('renderedrowrangechanged');
-    this.paintAll();
+    if (this.scrollY !== value) {
+        this.scrollY = value;
+        this.trigger('renderedrowrangechanged');
+        this.paintAll();
+    }
 };
 
 Grid.prototype.resizeScrollbars = function() {
@@ -388,15 +393,16 @@ Grid.prototype.checkCanvasBounds = function() {
         || canvas.getAttribute('height') !== ('' + (viewport.height - headerHeight))) {
 
         headerCanvas.style.position = 'relative';
-        headerCanvas.setAttribute('width', viewport.width);
-        headerCanvas.setAttribute('height', headerHeight);
 
         canvas.parentElement.style.top = headerHeight + 'px';
         canvas.style.position = 'relative';
         canvas.style.top = '1px';
 
-        canvas.setAttribute('width', viewport.width);
-        canvas.setAttribute('height', viewport.height - headerHeight);
+        this.setDpi(headerCanvas, viewport.width, headerHeight);
+        this.setDpi(canvas, viewport.width, (viewport.height - headerHeight));
+    } else {
+        // If the dimensions haven't changed, no need to do anything.
+        return;
     }
 
     this.boundsInitialized = true;
@@ -408,8 +414,28 @@ Grid.prototype.checkCanvasBounds = function() {
     return true;
 };
 
+Grid.prototype.setDpi = function(canvas, width, height) {
+    var context = canvas.getContext('2d'),
+        devicePixelRatio = window.devicePixelRatio || 1,
+        backingStoreRatio = context.webkitBackingStorePixelRatio ||
+                        context.mozBackingStorePixelRatio ||
+                        context.msBackingStorePixelRatio ||
+                        context.oBackingStorePixelRatio ||
+                        context.backingStorePixelRatio || 1,
+        ratio = this.resolveProperty('highDpiEnabled') ? devicePixelRatio / backingStoreRatio : 1;
+
+    canvas.setAttribute('width', width * ratio);
+    canvas.setAttribute('height', height * ratio);
+
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
+
+    context.scale(ratio, ratio);
+};
+
 Grid.prototype.updateRowCount = function() {
     this.checkScrollbars();
+    this.paintAll();
 };
 
 Grid.prototype.checkScrollbars = function() {
@@ -584,12 +610,17 @@ Grid.prototype.paintMainArea = function(config, numCols, numRows) {
 
         var totalHeight = 0;
         var totalWidth = 0;
-        var dx, dy = 0;
+        var x, y, dx, dy = 0;
+
         context.save();
-        for (var x = 0; (x + scrollX) < numCols && totalWidth < bounds.width; x++) {
+
+        context.fillStyle = '#999999';
+        context.fillRect(0, 0, bounds.width, bounds.height);
+
+        for (x = 0; (x + scrollX) < numCols && totalWidth < bounds.width; x++) {
             var rowHeight = 0;
             totalHeight = 0;
-            for (var y = 0; (y + scrollY) < numRows && totalHeight < bounds.height; y++) {
+            for (y = 0; (y + scrollY) < numRows && totalHeight < bounds.height; y++) {
                 var dx = x + scrollX;
                 var dy = y + scrollY;
                 this.paintCell(context, dx, dy, config);
@@ -598,6 +629,13 @@ Grid.prototype.paintMainArea = function(config, numCols, numRows) {
             }
             var colWidth = this.getColumnWidth(dx);
             totalWidth = totalWidth + colWidth;
+        }
+
+        this.renderedRange = {
+            left: scrollX,
+            right: x + scrollX - 1,
+            top: scrollY,
+            bottom: y + scrollY - 1
         }
 
     } catch (e) {
@@ -613,7 +651,13 @@ Grid.prototype.paintHeaders = function(config, numCols, numRows) {
     	config.cellPadding = '0px';
         var self = this;
         var context = this.getHeaderContext();
+        var bounds = this.getHeaderCanvas().getBoundingClientRect();
+
         context.save();
+
+        context.fillStyle = '#bbbbbb';
+        context.fillRect(0, 0, bounds.width, bounds.height);
+
         for (var x = 0; x < numCols; x++) {
             this.paintHeaderCell(context, x, config);
         }
@@ -681,13 +725,7 @@ Grid.prototype.getDefaultFinalPageLocation = function() {
 };
 
 Grid.prototype.getRenderedRowRange = function() {
-    var mySize = this.getCanvas().getBoundingClientRect();
-    var rowHeight = this.getRowHeight(0);
-    var numRows = Math.ceil(mySize.height/rowHeight);
-    return {
-        top: this.scrollY,
-        bottom: this.scrollY + numRows - 1
-    };
+    return this.renderedRange;
 };
 
 Grid.prototype.getDefaultCellRenderer = function() {

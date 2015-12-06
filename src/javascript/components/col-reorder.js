@@ -343,7 +343,6 @@ function init(self, divHeader) {
         var to = nearestBorderIndex;
         var reordered = moveIdx(columns, from, to);
         self.setColumns(reordered);
-        self.paintAll();
 
         // Clear our state.
         dragStartX = null;
@@ -363,6 +362,8 @@ function init(self, divHeader) {
         document.removeEventListener('mouseup', onReorderDragEnd);
 
         self.trigger('columnsreordered');
+
+        self.paintAll();
     }
 }
 
