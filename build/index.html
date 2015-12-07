@@ -33,7 +33,7 @@
 
     var randomRow = function() {
         var row = {
-            work: 0,
+            work: '',
             bids: (Math.random() * 100).toFixed(0),
             price: (Math.random() * 1000).toFixed(2),
             asks: (Math.random() * 100).toFixed(0),
@@ -46,7 +46,6 @@
         var data = new Array(rowCount);
         for (var i = 0; i < rowCount; i++) {
             data[i] = randomRow();
-            data[i].work = i;
         }
         return data;
     };
@@ -60,7 +59,7 @@
 
     grid1.addColumn('work', 'Work', 'object', 50, function(gc, config) {
     	config.backgroundColor = '#505050';
-    	config.color = 'rgb(255,255,255)';
+    	config.color = 'rgb(71,71,71)';
     	defaultCellRenderer(gc, config);
     });
     grid1.addColumn('bids', 'Bids', 'number', 50, function(gc, config) {

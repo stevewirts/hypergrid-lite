@@ -572,6 +572,7 @@ Grid.prototype.addColumn = function(field, label, type, width, renderer) {
     var columns = this.getColumns();
     var newCol = new Column(this, field, label, type, width, renderer);
     columns.push(newCol);
+    this.paintAll();
 };
 
 Grid.prototype.addEventListener = function() {
