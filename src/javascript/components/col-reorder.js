@@ -40,12 +40,13 @@ function detectNearestColumn(grid, evt) {
     var column;
     var columns = grid.getColumns();
     var headerCanvas = grid.getHeaderCanvas();
+    var renderedRange = grid.getRenderedRowRange();
     var headerRect = getOffsetRect(headerCanvas);
     var columnLeft = headerRect.left;
     var columnRight = headerRect.left;
     var indexOfNearestColumn = columns.length - 1;
 
-    for(var c = 0; c < columns.length; c++) {
+    for(var c = renderedRange.left; c < columns.length; c++) {
         column = columns[c];
         columnLeft = columnRight;
         columnRight += column.getWidth();
