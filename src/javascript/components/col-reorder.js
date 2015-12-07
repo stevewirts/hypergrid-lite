@@ -40,18 +40,19 @@ function detectNearestColumn(grid, evt) {
     var column;
     var columns = grid.getColumns();
     var headerCanvas = grid.getHeaderCanvas();
-    var headerRect = headerCanvas.getBoundingClientRect();
+    var renderedRange = grid.getRenderedRowRange();
+    var headerRect = getOffsetRect(headerCanvas);
     var columnLeft = headerRect.left;
     var columnRight = headerRect.left;
     var indexOfNearestColumn = columns.length - 1;
 
-    for(var c = 0; c < columns.length; c++) {
+    for(var c = renderedRange.left; c < columns.length; c++) {
         column = columns[c];
         columnLeft = columnRight;
         columnRight += column.getWidth();
         // Note: when no column matches this condition,
         // `indexOfNearestColumn` will be the last column.
-        if(evt.clientX < columnRight) {
+        if(evt.pageX < columnRight) {
             indexOfNearestColumn = c;
             break;
         }
@@ -77,20 +78,36 @@ function detectResizingAreaColumn(grid, evt) {
     var threshold = 5;
     var nearest = detectNearestColumn(grid, evt);
 
-    dragStartX = evt.clientX;
+    dragStartX = evt.pageX;
 
     // Detect if we clicked near the left or right border of a header cell
-    if(Math.abs(evt.clientX - nearest.columnLeft) <= threshold) {
+    if(Math.abs(evt.pageX - nearest.columnLeft) <= threshold) {
         // The user clicked near the left border.
         // Resize the previous column, or else the first column.
         return grid.getColumns()[Math.max(nearest.index - 1, 0)];
-    } else if(Math.abs(evt.clientX - nearest.columnRight) <= threshold) {
+    } else if(Math.abs(evt.pageX - nearest.columnRight) <= threshold) {
         // The user clicked near the right border.
         // Resize the current column.
         return grid.getColumns()[nearest.index];
     } else {
         return null;
     }
+}
+
+
+/*
+ * Get element boundingClientRect offset offset by page scroll
+ * @param {DOMElement} element whose offset rectangle to get
+ * @return {object}            offset bounding rectangle
+ */
+function getOffsetRect(element) {
+    var rect = element.getBoundingClientRect();
+    return {
+        top: rect.top + window.pageYOffset,
+        left: rect.left + window.pageXOffset,
+        width: rect.width,
+        height: rect.height
+    };
 }
 
 function init(self, divHeader) {
@@ -172,7 +189,7 @@ function init(self, divHeader) {
         var nearest = detectNearestColumn(self, evt);
         var resizingAreaColumn = detectResizingAreaColumn(self, evt);
 
-        dragStartX = evt.clientX;
+        dragStartX = evt.pageX;
 
         if(resizingAreaColumn) {
             // The user clicked near a border.
@@ -206,12 +223,12 @@ function init(self, divHeader) {
 
     function onResizeDrag(evt) {
         // Update the column width.
-        var changeInX = evt.clientX - dragStartX;
+        var changeInX = evt.pageX - dragStartX;
         var newWidth = Math.max(10, resizeColumnInitialWidth + changeInX);
         resizeColumn.setWidth(newWidth);
-        if(!self.checkCanvasBounds()) {
-            self.paintAll();
-        }
+
+        self.trigger('columnsresizing');
+        self.paintAll();
     }
 
     function onResizeDragEnd(evt) {
@@ -231,6 +248,7 @@ function init(self, divHeader) {
         // Prevent user-select.
         evt.preventDefault();
 
+        self.checkScrollbars();
         self.trigger('columnsresized');
     }
 
@@ -241,7 +259,7 @@ function init(self, divHeader) {
     function startReorder(nearestColumn, nearestColumnLeft) {
         // Set up `dragHeader`.
         var headerCanvas = self.getHeaderCanvas();
-        var headerRect = headerCanvas.getBoundingClientRect();
+        var headerRect = getOffsetRect(headerCanvas);
         var nearestColumnWidth = nearestColumn.getWidth();
         dragHeader = document.createElement('canvas');
         dragHeader.width = nearestColumnWidth;
@@ -282,19 +300,19 @@ function init(self, divHeader) {
         var nearest = detectNearestColumn(self, evt);
         var columnLeft = nearest.columnLeft;
         var columnRight = nearest.columnRight;
-        var isLeftOfCenter = evt.clientX < (columnLeft + columnRight) * 0.5;
+        var isLeftOfCenter = evt.pageX < (columnLeft + columnRight) * 0.5;
         var xOfNearestBorder = isLeftOfCenter ? columnLeft : columnRight;
 
         // Update `inserter`.
         var headerCanvas = self.getHeaderCanvas();
-        var headerRect = headerCanvas.getBoundingClientRect();
+        var headerRect = getOffsetRect(headerCanvas);
         // Subtract 2 pixels to make `inserter` appear ON the border.
         inserter.style.left = (xOfNearestBorder - 2) + 'px';
         inserter.style.top = headerRect.top + 'px';
         inserter.style.display = 'block';
 
         // Update `dragHeader`.
-        var changeInX = evt.clientX - dragStartX;
+        var changeInX = evt.pageX - dragStartX;
         // Disallow dragging past the left of the header.
         var minimum = headerRect.left - reorderingColumnLeftStart;
         changeInX = Math.max(minimum, changeInX);
@@ -316,7 +334,7 @@ function init(self, divHeader) {
         var nearest = detectNearestColumn(self, evt);
         var columnLeft = nearest.columnLeft;
         var columnRight = nearest.columnRight;
-        var nearestBorderIndex = evt.clientX < (columnLeft + columnRight) * 0.5
+        var nearestBorderIndex = evt.pageX < (columnLeft + columnRight) * 0.5
             ? nearest.index
             : nearest.index + 1;
 
@@ -326,7 +344,6 @@ function init(self, divHeader) {
         var to = nearestBorderIndex;
         var reordered = moveIdx(columns, from, to);
         self.setColumns(reordered);
-        self.paintAll();
 
         // Clear our state.
         dragStartX = null;
@@ -346,6 +363,8 @@ function init(self, divHeader) {
         document.removeEventListener('mouseup', onReorderDragEnd);
 
         self.trigger('columnsreordered');
+
+        self.paintAll();
     }
 }
 
